@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": ".",
+    "outDir": "build",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "allowJs": true,
+    "checkJs": false,
+    "strict": false,
+    "skipLibCheck": true,
+    "sourceMap": true
+  },
+  "include": [
+    "server/**/*.ts",
+    "server/db.js",
+    "server/auth.js",
+    "server/seed.js",
+    "shared/**/*.js"
+  ]
+}

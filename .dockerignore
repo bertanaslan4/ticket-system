@@ -1,0 +1,11 @@
+node_modules
+data
+.env
+.git
+.tools
+dist
+build
+backups
+*.log
+
+/storage/

@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+data/
+.env
+.tools/
+*.log
+backups/
+
+/storage/
+.pnpm-store/
+.env.*
+!.env.example
+/*preview*.png
+/*preview*.jpg
+.DS_Store
+*.DS_Store

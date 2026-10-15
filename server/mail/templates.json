@@ -1,0 +1,11 @@
+{
+  "note": "Bu anahtarlar ve şablonlar Takipsan mail API'sinde tanımlanmalıdır; yalnızca Jetmail kampanya şablonu oluşturmak yeterli değildir. Aşağıdaki alan adları data içindedir. Metin alanlarını HTML'e yerleştirirken escape uygulayın. ticket_url boşsa bağlantıyı göstermeyin. Bu dosya şablonları uzak servise otomatik yüklemez.",
+  "support_request_closed": {
+    "subject": "Destek isteminiz çözümlendi · {ticket_number}",
+    "body": "Sayın {recipient_name},\n\n{ticket_number} numaralı destek isteminiz ilgili destek şirketi tarafından çözümlenerek kapatılmıştır.\n\nKonu: {ticket_title}\nFirma: {customer_name}\n\nÇözüm açıklaması:\n{resolution}\n\nDestek istemini görüntüle: {ticket_url}\n\nTakipsan Destek Merkezi"
+  },
+  "support_request_assigned": {
+    "subject": "Destek istemi ataması · {ticket_number}",
+    "body": "Sayın {recipient_name},\n\n{ticket_number} numaralı destek istemi size veya şirketinizin destek havuzuna atanmıştır.\n\nKonu: {ticket_title}\nFirma: {customer_name}\nÖncelik: {severity}\n\nİncelemek için: {ticket_url}\n\nTakipsan Destek Merkezi"
+  }
+}

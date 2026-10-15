@@ -1,0 +1,22 @@
+{
+  "title": "Destek istemi ataması · TK-0005",
+  "template": "support_request_assigned",
+  "source": "ushops",
+  "lang": "tr",
+  "reply_to": "u-shops@takipsan.com",
+  "to": [
+    "recipient@example.com"
+  ],
+  "data": {
+    "notification_type": "assigned",
+    "recipient_name": "Ayşe Demir",
+    "ticket_id": 5,
+    "ticket_number": "TK-0005",
+    "ticket_title": "Sipariş ekranında kayıt güncelleme",
+    "customer_name": "Yargıcı",
+    "severity": "s2",
+    "resolution": "",
+    "ticket_url": "",
+    "date": "09.10.2026"
+  }
+}

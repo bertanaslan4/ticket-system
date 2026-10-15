@@ -1,0 +1,82 @@
+TAKİPSAN DESTEK İSTEMİ MAIL ŞABLONLARI
+
+Amaç: Ticket-System yalnızca JSON gönderecek. HTML karşı tarafta hazırlanacak.
+Bu paket mevcut API'nin kaynak kodu görülmeden hazırlanmış Laravel Blade uyarlamasıdır.
+Mevcut şablon motoru Blade değilse tasarım ve alanlar o motora uyarlanmalıdır.
+
+ŞABLON ANAHTARLARI VE DOSYA ADLARI
+1) Atama: support_request_assigned
+   Dosya: support_request_assigned.blade.php
+2) Müşteriye çözüm: support_request_closed
+   Dosya: support_request_closed.blade.php
+
+Önerilen Laravel konumu:
+resources/views/mail/support_request_assigned.blade.php
+resources/views/mail/support_request_closed.blade.php
+
+API TARAFINDA YAPILACAKLAR
+- /mail/send uç noktasındaki izin verilen template değerlerine iki anahtarı ekleyin.
+- Mevcut lisans şablonlarını ve doğrulama kurallarını koruyun.
+- source=ushops ve lang=tr için bu şablonların kullanılabilmesini sağlayın.
+- Sabit eşleştirme kullanın:
+  support_request_assigned -> mail.support_request_assigned
+  support_request_closed -> mail.support_request_closed
+- Örnek render: view('mail.support_request_closed', ['data' => $payload['data']])->render()
+- title alanını mail konusu, to dizisini alıcı, reply_to alanını yanıt adresi olarak kullanın.
+- Oluşan HTML'i mevcut Jetmail gönderim mekanizmasına aktarın.
+- Dosyaları kopyalamak tek başına yeterli değildir: doğrulama ve render eşlemesi de güncellenmelidir.
+
+JSON SÖZLEŞMESİ
+İki *.example.json dosyası mevcut Ticket-System payload yapısını gösterir.
+recipient@example.com yalnızca örnektir; bu adrese test gönderimi yapmayın.
+data alanları:
+notification_type: assigned veya closed; seçilen şablonla eşleşmeli.
+recipient_name: alıcının adı.
+ticket_id: sayısal istem kimliği.
+ticket_number: görüntülenecek istem numarası, ör. TK-0005.
+ticket_title: istem başlığı.
+customer_name: istemi oluşturan müşteri şirketinin adı. Mailde Firma satırında gösterilir.
+program: eski API doğrulamalarıyla uyumluluk için gönderilebilir; mailde gösterilmez.
+severity: öncelik değeri; s1, s2 veya s3. Teknik alan adı değişmedi.
+Şablonlarda eski Ciddiyet etiketi yerine Öncelik kullanılmalıdır.
+date: Avrupa/İstanbul saat diliminde GG.AA.YYYY bildirim tarihi.
+resolution: closed için bayinin müşteriye açık çözümü; assigned için boş string.
+ticket_url: opsiyonel; boş string kabul edilmeli ve boşsa düğme gösterilmemeli.
+
+GİZLİLİK VE İÇERİK
+Müşteriye yalnızca bayinin müşteriye açık çözümü gönderilir.
+Takipsan'ın şirket içi çözümü ve iç yorumlar gönderilmez.
+Atama şablonu çözüm alanını hiç göstermez.
+Blade {{ ... }} çıktıları escape eder. Çözümde nl2br(e(...)) ile önce escape uygulanır.
+HTML olarak kullanıcı verisini doğrudan çalıştırmayın.
+
+İSTEK İMZASI (MEVCUT LİSANS GÖNDERİMİYLE AYNI)
+POST https://api.takipsanplus.com/mail/send
+Content-Type: application/json
+Accept: application/json
+X-Mail-Timestamp: Unix timestamp (saniye)
+X-Mail-Signature: HMAC-SHA256(timestamp, mevcut ortak gizli anahtar), hex
+Ticket-System ayrıca Idempotency-Key: ticket-mail-<outbox_id> gönderir.
+Mevcut kimlik doğrulama korunmalıdır. Paket hiçbir şifre veya API secret içermez.
+
+DOĞRULAMA VE DEVREYE ALMA
+- Her iki örneği gerçek alıcıya göndermeden önce sunucuda render edin.
+- Uzun başlık, Türkçe karakter, çok satırlı çözüm ve HTML içeren kullanıcı metnini deneyin.
+- ticket_url boşken düğme olmamalı; geçerli http/https adresi verilince düğme görünmeli.
+- Şablonlar tanındığında ve sunucuya alındığında Ticket-System ekibine bildirin.
+- Ticket-System tarafında kullanılacak ayarlar:
+  MAIL_TEMPLATE_ASSIGNED=support_request_assigned
+  MAIL_TEMPLATE_CLOSED=support_request_closed
+- MAIL_ENABLED ancak sunucu tarafı hazır olduğunda açılacak.
+- Teslimat testi için ayrıca onaylanmış bir test alıcısı kullanılacak.
+
+Not: Bu dosyalar henüz uzak API'ye yüklenmemiştir ve mail gönderimi açılmamıştır.
+
+9 EKİM 2026 GÜNCELLEMESİ
+Her iki Blade dosyasını canlı API'deki mevcut karşılıklarıyla değiştirin.
+Şablon anahtarları aynı kalacak: support_request_assigned ve support_request_closed.
+Program satırı kaldırıldı; Firma satırı data.customer_name alanını kullanır.
+Ciddiyet etiketi Öncelik oldu; değer data.severity alanından okunmaya devam eder.
+API payload doğrulaması varsa customer_name alanını kabul edip view verisine aktarın.
+Eski program alanı uyumluluk amacıyla gönderilebilir fakat şablonda gösterilmez.
+Bu paket sunucuya otomatik yüklenmez. Görsel mail değişikliği sunucudaki şablonlar güncellendiğinde geçerli olur.

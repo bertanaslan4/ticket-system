@@ -1,0 +1,95 @@
+CREATE TABLE IF NOT EXISTS organizations (
+ id SERIAL PRIMARY KEY, name TEXT NOT NULL, kind TEXT NOT NULL CHECK(kind IN ('customer','dealer','contractor')),
+ dealer_id INTEGER REFERENCES organizations(id), program TEXT, daily_limit INTEGER NOT NULL DEFAULT 10 CHECK(daily_limit>0)
+);
+CREATE TABLE IF NOT EXISTS users (
+ id SERIAL PRIMARY KEY, org_id INTEGER NOT NULL REFERENCES organizations(id), name TEXT NOT NULL,
+ email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sessions (
+ token_hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), expires_at TIMESTAMPTZ NOT NULL
+);
+CREATE TABLE IF NOT EXISTS tickets (
+ id SERIAL PRIMARY KEY, customer_id INTEGER NOT NULL REFERENCES organizations(id), dealer_id INTEGER NOT NULL REFERENCES organizations(id),
+ created_by INTEGER NOT NULL REFERENCES users(id), program TEXT NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL,
+ type TEXT NOT NULL CHECK(type IN ('Hata','İstek')), severity TEXT NOT NULL CHECK(severity IN ('s1','s2','s3')),
+ status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','in_progress','review','closed')),
+ owner_org_id INTEGER NOT NULL REFERENCES organizations(id), assignee_id INTEGER REFERENCES users(id),
+ escalated BOOLEAN NOT NULL DEFAULT false, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS events (
+ id SERIAL PRIMARY KEY, ticket_id INTEGER NOT NULL REFERENCES tickets(id), actor_id INTEGER NOT NULL REFERENCES users(id),
+ kind TEXT NOT NULL, visibility TEXT NOT NULL CHECK(visibility IN ('public','internal')), body TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS tickets_customer_date ON tickets(customer_id,created_at);
+CREATE INDEX IF NOT EXISTS events_ticket ON events(ticket_id,id);
+CREATE INDEX IF NOT EXISTS tickets_owner ON tickets(owner_org_id,status);
+
+-- Copy the customer's routing policy onto each new request; existing requests keep their workflow.
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS support_flow TEXT NOT NULL DEFAULT 'dealer_first' CHECK (support_flow IN ('dealer_first','contractor_first','contractor_only'));
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS support_flow TEXT NOT NULL DEFAULT 'dealer_first' CHECK (support_flow IN ('dealer_first','contractor_first','contractor_only'));
+ALTER TABLE tickets ALTER COLUMN dealer_id DROP NOT NULL;
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS contractor_id INTEGER REFERENCES organizations(id);
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS dealer_involved BOOLEAN NOT NULL DEFAULT true;
+
+-- Ordered customer-specific support companies. NULL retains the legacy policy
+-- until configured; new tickets snapshot both the chain and its visibility.
+ALTER TABLE organizations DROP CONSTRAINT IF EXISTS organizations_kind_check;
+ALTER TABLE organizations ADD CONSTRAINT organizations_kind_check CHECK(kind IN ('customer','dealer','contractor','support'));
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS support_chain INTEGER[] CHECK(cardinality(support_chain)>0);
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS support_chain INTEGER[] CHECK(cardinality(support_chain)>0);
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS visible_support_org_ids INTEGER[] NOT NULL DEFAULT '{}';
+CREATE INDEX IF NOT EXISTS tickets_support_visibility ON tickets USING GIN(visible_support_org_ids);
+
+-- Convert the former customer presets once. Existing tickets retain their old
+-- policy; future tickets snapshot the converted chain. Ambiguous configurations
+-- remain untouched so an administrator can select the intended companies.
+WITH legacy_contractor AS (
+ SELECT id FROM organizations WHERE kind='contractor'
+ AND (lower(name) IN ('bekatos', 'takipsan') OR (SELECT count(*) FROM organizations WHERE kind='contractor')=1)
+ ORDER BY id LIMIT 1
+)
+UPDATE organizations o SET support_chain = CASE
+ WHEN o.support_flow='contractor_only' THEN ARRAY[c.id]
+ WHEN o.support_flow='contractor_first' THEN ARRAY[c.id,o.dealer_id]
+ ELSE ARRAY[o.dealer_id,c.id] END
+FROM legacy_contractor c
+WHERE o.kind='customer' AND o.support_chain IS NULL
+ AND (o.support_flow='contractor_only' OR (o.dealer_id IS NOT NULL AND o.dealer_id<>c.id));
+
+-- Additive migration: existing users retain their organization-based permissions.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS system_role TEXT NOT NULL DEFAULT 'member' CHECK(system_role IN ('member','super_admin'));
+ALTER TABLE users ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS message_key TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS message_params JSONB NOT NULL DEFAULT '{}';
+CREATE TABLE IF NOT EXISTS admin_audit (
+ id SERIAL PRIMARY KEY, actor_id INTEGER NOT NULL REFERENCES users(id),
+ action TEXT NOT NULL, target_id INTEGER NOT NULL, details JSONB NOT NULL DEFAULT '{}',
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS attachments (id UUID PRIMARY KEY, ticket_id INTEGER NOT NULL REFERENCES tickets(id), event_id INTEGER REFERENCES events(id), name TEXT NOT NULL, size BIGINT NOT NULL, storage TEXT NOT NULL, object_key TEXT NOT NULL UNIQUE);
+CREATE INDEX IF NOT EXISTS attachments_ticket_idx ON attachments(ticket_id);
+
+CREATE TABLE IF NOT EXISTS storage_settings(id INTEGER PRIMARY KEY CHECK(id=1), config TEXT NOT NULL, version INTEGER NOT NULL, checked_at TIMESTAMPTZ);
+
+CREATE TABLE IF NOT EXISTS mail_outbox (
+ id SERIAL PRIMARY KEY,event_id INTEGER NOT NULL REFERENCES events(id),user_id INTEGER NOT NULL REFERENCES users(id),kind TEXT NOT NULL CHECK(kind IN ('assigned','closed')),payload JSONB NOT NULL,status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','sending','sent','failed','skipped')),attempts INTEGER NOT NULL DEFAULT 0,next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT now(),locked_at TIMESTAMPTZ,lock_token TEXT,last_error TEXT,created_at TIMESTAMPTZ NOT NULL DEFAULT now(),sent_at TIMESTAMPTZ,UNIQUE(event_id,user_id,kind)
+);
+CREATE INDEX IF NOT EXISTS mail_outbox_pending ON mail_outbox(status,next_attempt_at);
+
+CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, name TEXT NOT NULL CHECK(length(btrim(name)) BETWEEN 1 AND 180));
+CREATE UNIQUE INDEX IF NOT EXISTS products_name_unique ON products(lower(btrim(name)));
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS product_id INTEGER REFERENCES products(id);
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS product_id INTEGER REFERENCES products(id);
+CREATE INDEX IF NOT EXISTS tickets_product_date ON tickets(product_id,created_at);
+-- Preserve historical text while linking existing program names to the catalog.
+INSERT INTO products(name)
+SELECT min(btrim(program)) FROM (
+ SELECT program FROM organizations WHERE product_id IS NULL
+ UNION ALL SELECT program FROM tickets WHERE product_id IS NULL
+) names WHERE program IS NOT NULL AND btrim(program)<>''
+GROUP BY lower(btrim(program)) ON CONFLICT DO NOTHING;
+UPDATE organizations o SET product_id=p.id FROM products p WHERE o.product_id IS NULL AND lower(btrim(o.program))=lower(btrim(p.name));
+UPDATE tickets t SET product_id=p.id FROM products p WHERE t.product_id IS NULL AND lower(btrim(t.program))=lower(btrim(p.name));

@@ -1,0 +1,22 @@
+{
+  "title": "Destek isteminiz çözümlendi · TK-0005",
+  "template": "support_request_closed",
+  "source": "ushops",
+  "lang": "tr",
+  "reply_to": "u-shops@takipsan.com",
+  "to": [
+    "recipient@example.com"
+  ],
+  "data": {
+    "notification_type": "closed",
+    "recipient_name": "Müşteri Kullanıcısı",
+    "ticket_id": 5,
+    "ticket_number": "TK-0005",
+    "ticket_title": "Sipariş ekranında kayıt güncelleme",
+    "customer_name": "Yargıcı",
+    "severity": "s2",
+    "resolution": "Güncelleme tamamlandı.\nBayi tarafından test edilerek sorunun çözüldüğü doğrulandı.",
+    "ticket_url": "",
+    "date": "09.10.2026"
+  }
+}
