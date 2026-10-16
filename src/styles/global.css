@@ -1732,26 +1732,30 @@ body[data-theme-version="dark"] .secondary:hover:not(:disabled) {
   color: #ffffff;
 }
 
+[data-theme="dark"] dialog.modal,
+[data-theme="dark"] dialog.modal[open],
 [data-theme="dark"] .modal,
+body[data-theme-version="dark"] dialog.modal,
+body[data-theme-version="dark"] dialog.modal[open],
 body[data-theme-version="dark"] .modal {
-  background: var(--modal-bg);
-  border-color: var(--modal-border);
-  color: var(--text-primary);
-  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.6);
+  background: var(--modal-bg) !important;
+  border-color: var(--modal-border) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.6) !important;
 }
 [data-theme="dark"] .modal-heading,
 body[data-theme-version="dark"] .modal-heading {
-  background: #111333;
-  border-bottom-color: var(--modal-border);
+  background: #111333 !important;
+  border-bottom-color: var(--modal-border) !important;
 }
 [data-theme="dark"] .modal-heading h2,
 body[data-theme-version="dark"] .modal-heading h2 {
-  color: #ffffff;
+  color: #ffffff !important;
 }
 [data-theme="dark"] .modal-close,
 body[data-theme-version="dark"] .modal-close {
-  background: #1e224e;
-  color: #cbd5e1;
+  background: #1e224e !important;
+  color: #cbd5e1 !important;
 }
 
 [data-theme="dark"] .login,
@@ -1953,8 +1957,30 @@ tbody tr:hover { background: #f5faff; }
 .attachment-input input { border: 0; padding: 8px 0; background: transparent; }
 input::file-selector-button { border: 1px solid #bfd9e9; border-radius: 7px; padding: 8px 13px; color: #126ba2; background: #eaf5fc; margin-right: 12px; cursor: pointer; }
 .form-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
-.modal { width: min(720px, calc(100vw - 40px)); max-height: calc(100dvh - 48px); padding: 0; border: 1px solid #dbe7ef; border-radius: 18px; color: #24323b; background: #fff; box-shadow: 0 24px 90px #052c4b40; overflow-y: auto; }
-.modal::backdrop { background: #08283e80; backdrop-filter: blur(4px); }
+dialog.modal,
+dialog.modal[open],
+.modal {
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  margin: auto !important;
+  width: min(720px, calc(100vw - 40px)) !important;
+  height: fit-content !important;
+  max-height: calc(100dvh - 48px) !important;
+  padding: 0 !important;
+  border: 1px solid #dbe7ef !important;
+  border-radius: 18px !important;
+  color: #24323b !important;
+  background: #ffffff !important;
+  box-shadow: 0 24px 90px rgba(5, 44, 75, 0.4) !important;
+  overflow-y: auto !important;
+  z-index: 100000 !important;
+}
+dialog.modal::backdrop,
+.modal::backdrop {
+  background: rgba(8, 40, 62, 0.5) !important;
+  backdrop-filter: blur(4px) !important;
+}
 .modal-heading { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 24px 28px; border-bottom: 1px solid #e2ebf1; background: #f8fbfe; }
 .modal-heading h2 { font-size: 24px; color: #00466d; margin: 0; }
 .modal-heading .eyebrow { margin-bottom: 6px; }

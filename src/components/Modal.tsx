@@ -8,11 +8,18 @@ export default function Modal({title,busy=false,onClose,children,eyebrow=tr("sys
  useEffect(()=>{
   const dialog=ref.current!,previous=document.activeElement as HTMLElement;
   const overflow=document.body.style.overflow;
-  dialog.showModal();document.body.style.overflow='hidden';
+  if (!dialog.open) {
+    dialog.showModal();
+  }
+  document.body.style.overflow='hidden';
   dialog.querySelector<HTMLElement>('input:not([disabled]),select:not([disabled])')?.focus();
-  return ()=>{dialog.close();document.body.style.overflow=overflow;previous?.focus();};
+  return ()=>{
+    if (dialog.open) dialog.close();
+    document.body.style.overflow=overflow;
+    previous?.focus();
+  };
  },[]);
- return createPortal(<dialog ref={ref} className={`modal ${className}`} aria-labelledby={titleId} aria-modal="true" onCancel={e=>{e.preventDefault();if(!busy)onClose();}}>
+ return createPortal(<dialog ref={ref} className={`modal show ${className}`} aria-labelledby={titleId} aria-modal="true" onCancel={e=>{e.preventDefault();if(!busy)onClose();}} onClick={e => { if (e.target === ref.current && !busy) onClose(); }}>
   <div className="modal-heading"><div><div className="eyebrow">{eyebrow}</div><h2 id={titleId}>{title}</h2></div><button type="button" className="modal-close" disabled={busy} aria-label={tr('close')} onClick={onClose}><X size={20}/></button></div>
   <div className="modal-body">{children}</div>
  </dialog>,document.body);

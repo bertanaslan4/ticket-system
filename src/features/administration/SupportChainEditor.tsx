@@ -4,7 +4,7 @@ export default function SupportChainEditor({ chain, onChange, organizations }: {
   chain: number[]; onChange: (chain: number[]) => void;
   organizations: { id: number; name: string; kind: string }[];
 }) {
-  const companies = organizations.filter(o => o.kind !== 'customer');
+  const companies = (organizations || []).filter(o => o.kind !== 'customer');
   const move = (index: number, offset: number) => {
     const next = [...chain];
     [next[index], next[index + offset]] = [next[index + offset], next[index]];
