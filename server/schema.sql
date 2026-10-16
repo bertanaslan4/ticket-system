@@ -179,3 +179,31 @@ FROM (
 ) sub
 WHERE t.id = sub.ticket_id AND t.first_responded_at IS NULL;
 
+-- Phase 3: Mobile Push Tokens and Push Notification Outbox
+CREATE TABLE IF NOT EXISTS push_tokens (
+ id SERIAL PRIMARY KEY,
+ tenant_id INTEGER NOT NULL DEFAULT 1 REFERENCES tenants(id) ON DELETE CASCADE,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ token TEXT NOT NULL,
+ platform TEXT NOT NULL DEFAULT 'expo' CHECK(platform IN ('expo','ios','android')),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ UNIQUE(user_id, token)
+);
+CREATE INDEX IF NOT EXISTS push_tokens_user_idx ON push_tokens(user_id);
+
+CREATE TABLE IF NOT EXISTS push_outbox (
+ id SERIAL PRIMARY KEY,
+ tenant_id INTEGER NOT NULL DEFAULT 1 REFERENCES tenants(id) ON DELETE CASCADE,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+ event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
+ kind TEXT NOT NULL CHECK(kind IN ('assigned','comment','resolved','closed')),
+ title TEXT NOT NULL,
+ body TEXT NOT NULL,
+ data JSONB NOT NULL DEFAULT '{}',
+ status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','sent','skipped')),
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS push_outbox_user_idx ON push_outbox(user_id, id DESC);
+
+

@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Bekatos Destek Merkezi",
+    "slug": "bekatos-support-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "bekatos",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bekatos.support",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Destek taleplerine sahadan fotoğraf ve video ekleyebilmek için kamera izni gereklidir.",
+        "NSPhotoLibraryUsageDescription": "Destek taleplerine ekran görüntüsü ve video ekleyebilmek için galeri izni gereklidir."
+      }
+    },
+    "android": {
+      "package": "com.bekatos.support",
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Destek taleplerine fotoğraf ve video ekleyebilmek için galeri izni gereklidir.",
+          "cameraPermission": "Destek taleplerine doğrudan kameradan fotoğraf ve video çekebilmek için kamera izni gereklidir."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#213159"
+        }
+      ],
+      "expo-secure-store"
+    ]
+  }
+}

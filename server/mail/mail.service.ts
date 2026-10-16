@@ -106,6 +106,59 @@ export class MailService implements OnModuleInit, OnModuleDestroy {
         ],
       );
     }
+    await this.enqueuePush(
+      tx,
+      eventId,
+      kind === "closed" ? "closed" : "assigned",
+      mailTicket,
+      recipients,
+      resolution || mailTicket.title,
+    );
+  }
+  async enqueuePush(
+    tx: any,
+    eventId: number | null,
+    kind: "assigned" | "comment" | "resolved" | "closed",
+    ticket: any,
+    recipients: any[],
+    summary = "",
+  ) {
+    const tenantId = ticket.tenant_id || 1;
+    const ticketNum = `TK-${String(ticket.id).padStart(4, "0")}`;
+    const title =
+      kind === "closed"
+        ? `Destek istemi çözümlendi · ${ticketNum}`
+        : kind === "comment"
+          ? `Yeni yorum · ${ticketNum}`
+          : kind === "resolved"
+            ? `Çözüm incelemesi · ${ticketNum}`
+            : `Yeni destek istemi ataması · ${ticketNum}`;
+    const body = `${ticket.title}${summary && summary !== ticket.title ? " — " + summary.slice(0, 120) : ""}`;
+    const data = {
+      ticketId: ticket.id,
+      ticketNumber: ticketNum,
+      kind,
+      deepLink: `bekatos://tickets/${ticket.id}`,
+    };
+    const seen = new Set<number>();
+    for (const r of recipients) {
+      if (!r?.id || seen.has(r.id)) continue;
+      seen.add(r.id);
+      await tx.query(
+        `INSERT INTO push_outbox(tenant_id, user_id, ticket_id, event_id, kind, title, body, data, status)
+         VALUES($1, $2, $3, $4, $5, $6, $7, $8, 'pending')`,
+        [
+          tenantId,
+          r.id,
+          ticket.id,
+          eventId,
+          kind,
+          title,
+          body,
+          JSON.stringify(data),
+        ],
+      );
+    }
   }
   async send(payload: any, id: number) {
     const url = new URL(process.env.MAIL_API_URL!);

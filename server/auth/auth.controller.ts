@@ -15,12 +15,19 @@ export class AuthController {
   @Public()
   @Post("login")
   @HttpCode(200)
-  async login(@Body() body: any, @Res({ passthrough: true }) res: any) {
+  async login(
+    @Body() body: any,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: any,
+  ) {
     const token = await this.auth.login(body || {});
     res.setHeader(
       "Set-Cookie",
       `session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800${process.env.NODE_ENV === "production" ? "; Secure" : ""}`,
     );
+    if (body?.mobile === true || req?.headers?.["x-client"] === "mobile") {
+      return { ok: true, token };
+    }
     return { ok: true };
   }
   @Post("logout")
@@ -40,5 +47,19 @@ export class AuthController {
   @HttpCode(200)
   changePassword(@Req() req: any, @Body() body: any) {
     return this.auth.changePassword(req.user, req.token, body || {});
+  }
+  @Post("me/push-token")
+  @HttpCode(200)
+  registerPushToken(@Req() req: any, @Body() body: any) {
+    return this.auth.registerPushToken(req.user, body || {});
+  }
+  @Post("me/push-token/remove")
+  @HttpCode(200)
+  removePushToken(@Req() req: any, @Body() body: any) {
+    return this.auth.removePushToken(req.user, body || {});
+  }
+  @Get("me/notifications")
+  listNotifications(@Req() req: any) {
+    return this.auth.listNotifications(req.user);
   }
 }

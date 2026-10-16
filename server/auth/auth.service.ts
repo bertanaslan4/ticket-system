@@ -63,9 +63,18 @@ export class AuthService {
     ]);
     return { ok: true };
   }
-  async authenticate(cookie: string | undefined): Promise<any> {
+  async authenticate(
+    cookie: string | undefined,
+    authorization?: string | undefined,
+  ): Promise<any> {
     const db = this.database;
-    const token = cookie?.match(/(?:^|;\s*)session=([a-f0-9]{64})(?:;|$)/)?.[1];
+    const cookieToken = cookie?.match(
+      /(?:^|;\s*)session=([a-f0-9]{64})(?:;|$)/,
+    )?.[1];
+    const bearerToken = authorization?.match(
+      /^Bearer\s+([a-f0-9]{64})$/i,
+    )?.[1];
+    const token = cookieToken || bearerToken;
     if (!token) fail(401, "please_sign_in");
     const user = (
       await db.query(
@@ -74,7 +83,49 @@ export class AuthService {
       )
     ).rows[0];
     if (!user) fail(401, "your_session_has_expired");
-    if (user.tenant_status === "suspended") fail(403, "tenant_account_suspended");
+    if (user.tenant_status === "suspended")
+      fail(403, "tenant_account_suspended");
     return { user, token };
+  }
+  async registerPushToken(user: any, body: any) {
+    const token = text(body.token, 8, 256);
+    const platform = choice(body.platform ?? "expo", [
+      "expo",
+      "ios",
+      "android",
+    ]);
+    const tenantId = user.tenant_id || 1;
+    const row = (
+      await this.database.query(
+        `INSERT INTO push_tokens(tenant_id, user_id, token, platform, updated_at)
+         VALUES($1, $2, $3, $4, now())
+         ON CONFLICT(user_id, token)
+         DO UPDATE SET platform = EXCLUDED.platform, updated_at = now()
+         RETURNING id, user_id, tenant_id, token, platform, updated_at`,
+        [tenantId, user.id, token, platform],
+      )
+    ).rows[0];
+    return row;
+  }
+  async removePushToken(user: any, body: any) {
+    const token = text(body.token, 8, 256);
+    await this.database.query(
+      "DELETE FROM push_tokens WHERE user_id=$1 AND token=$2",
+      [user.id, token],
+    );
+    return { ok: true };
+  }
+  async listNotifications(user: any) {
+    const tenantId = user.tenant_id || 1;
+    return (
+      await this.database.query(
+        `SELECT id, ticket_id, event_id, kind, title, body, data, status, created_at
+         FROM push_outbox
+         WHERE user_id = $1 AND tenant_id = $2
+         ORDER BY id DESC
+         LIMIT 50`,
+        [user.id, tenantId],
+      )
+    ).rows;
   }
 }

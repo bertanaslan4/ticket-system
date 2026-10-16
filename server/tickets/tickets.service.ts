@@ -315,6 +315,41 @@ export class TicketsService {
         if (u.role !== "customer" && !t.first_responded_at) {
           await tx.query("UPDATE tickets SET first_responded_at=now() WHERE id=$1 AND first_responded_at IS NULL", [t.id]);
         }
+        const commentRecipients =
+          u.role === "customer"
+            ? (
+                await tx.query(
+                  t.assignee_id
+                    ? "SELECT id,name,email FROM users WHERE id=$1 AND active=true"
+                    : "SELECT id,name,email FROM users WHERE org_id=$1 AND active=true AND system_role='member'",
+                  [t.assignee_id || t.owner_org_id],
+                )
+              ).rows
+            : visibility === "public"
+              ? (
+                  await tx.query(
+                    "SELECT id,name,email FROM users WHERE id=$1 AND active=true",
+                    [t.created_by],
+                  )
+                ).rows
+              : t.assignee_id && t.assignee_id !== u.id
+                ? (
+                    await tx.query(
+                      "SELECT id,name,email FROM users WHERE id=$1 AND active=true",
+                      [t.assignee_id],
+                    )
+                  ).rows
+                : [];
+        if (commentRecipients.length) {
+          await this.mail.enqueuePush(
+            tx,
+            note.rows[0].id,
+            "comment",
+            t,
+            commentRecipients,
+            text(b.body),
+          );
+        }
       } else {
         if (
           ["customer", "super_admin"].includes(u.role) ||

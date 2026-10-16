@@ -16,7 +16,13 @@ export class SessionGuard implements CanActivate {
     )
       return true;
     const req = context.switchToHttp().getRequest();
-    Object.assign(req, await this.auth.authenticate(req.headers.cookie));
+    Object.assign(
+      req,
+      await this.auth.authenticate(
+        req.headers.cookie,
+        req.headers.authorization,
+      ),
+    );
     return true;
   }
 }
