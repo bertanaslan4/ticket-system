@@ -21,6 +21,9 @@ export const createTicket = (body: FormValues) =>
   api<Ticket>("/tickets", multipart(body));
 export const ticketAction = (id: string, body: FormValues) =>
   api("/tickets/" + encodeURIComponent(id) + "/actions", multipart(body));
+export const submitTicketCsat = (id: string, body: { rating: number; comment?: string }) =>
+  api("/tickets/" + encodeURIComponent(id) + "/csat", body);
+
 
 function multipart(body: FormValues) {
   const { files, ...payload } = body;

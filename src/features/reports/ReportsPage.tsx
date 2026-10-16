@@ -1,7 +1,7 @@
 import { useLanguage } from "../../i18n/index.js";
 import { tr, date, number } from "../../i18n/index.js";
 
-import { Download } from "lucide-react";
+import { Download, Star, Award } from "lucide-react";
 import { states, format } from "../administration/admin.shared";
 import { download } from "./exportReport";
 import { useReports } from "./reports.api";
@@ -169,6 +169,49 @@ export default function ReportsPage({productView=false}:{productView?:boolean}) 
               </section>
             ))}
           </div>
+          {report.csat && (
+            <div className="panel detail-section csat-report-card">
+              <div className="csat-score-big">
+                <span className="csat-badge" style={{ marginBottom: 8 }}>
+                  <Award size={14} />
+                  {tr("csat_satisfaction_survey")}
+                </span>
+                <div className="csat-big-number">
+                  {report.csat.average !== null ? Number(report.csat.average).toFixed(1) : "—"}
+                  <small>/ 5.0</small>
+                </div>
+                <div style={{ display: "flex", gap: 3, margin: "8px 0" }}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      size={18}
+                      fill={report.csat.average && s <= Math.round(report.csat.average) ? "#f59e0b" : "none"}
+                      color={report.csat.average && s <= Math.round(report.csat.average) ? "#f59e0b" : "#cbd5e1"}
+                    />
+                  ))}
+                </div>
+                <small style={{ color: "var(--text-secondary, #64748b)" }}>
+                  {tr("csat_total_surveys")}: <strong>{report.csat.total}</strong>
+                </small>
+              </div>
+              <div className="csat-bars">
+                <h3 style={{ margin: "0 0 10px 0", fontSize: 15, fontWeight: 600 }}>{tr("csat_score_distribution")}</h3>
+                {[5, 4, 3, 2, 1].map((stars) => {
+                  const count = report.csat.distribution?.[stars] || 0;
+                  const pct = report.csat.total > 0 ? Math.round((count / report.csat.total) * 100) : 0;
+                  return (
+                    <div key={stars} className="csat-bar-row">
+                      <span>★ {stars} {tr(`csat_rating_${stars}`)}</span>
+                      <div className="csat-bar-track">
+                        <div className="csat-bar-fill" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span style={{ textAlign: "right", fontWeight: 600 }}>{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {productView && <section className="panel"><div className="panel-title"><h2>{tr('product_reports')}</h2></div><div className="table-wrap"><table>
             <thead><tr><th>{tr('product')}</th><th>{tr('total_tickets')}</th><th>{tr('open_tickets')}</th><th>{tr('closed_3')}</th></tr></thead>
             <tbody>{(report.byProduct || []).map(p=><tr key={p.id}><td><button className="ticket-title" onClick={()=>setFilters({...filters,product_id:String(p.id)})}>{p.name}</button></td><td>{p.count}</td><td>{p.open}</td><td>{p.closed}</td></tr>)}</tbody>
@@ -200,8 +243,9 @@ export default function ReportsPage({productView=false}:{productView?:boolean}) 
                       tr("severity"),
                       tr("created_2"),
                       tr("closed_4"),
+                      tr("csat_score"),
                     ].map((v) => (
-                      <th key={tr(v)}>{tr(v)}</th>
+                      <th key={v}>{v}</th>
                     ))}
                   </tr>
                 </thead>
@@ -234,6 +278,15 @@ export default function ReportsPage({productView=false}:{productView?:boolean}) 
                       </td>
                       <td>{format(t.created_at)}</td>
                       <td>{t.closed_at ? format(t.closed_at) : "—"}</td>
+                      <td>
+                        {t.csat_rating ? (
+                          <span style={{ color: "#d97706", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                            ★ {t.csat_rating}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

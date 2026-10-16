@@ -351,4 +351,19 @@ ALTER TABLE tenants ADD COLUMN IF NOT EXISTS widget_color TEXT DEFAULT '#3b4cb8'
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS widget_greeting TEXT DEFAULT 'Merhaba! Size nasıl yardımcı olabiliriz?';
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS widget_position TEXT DEFAULT 'right' CHECK(widget_position IN ('right','left'));
 
+-- Phase 10: CSAT Customer Satisfaction Surveys
+CREATE TABLE IF NOT EXISTS csat_surveys (
+  id SERIAL PRIMARY KEY,
+  tenant_id INTEGER NOT NULL DEFAULT 1 REFERENCES tenants(id) ON DELETE CASCADE,
+  ticket_id INTEGER NOT NULL UNIQUE REFERENCES tickets(id) ON DELETE CASCADE,
+  customer_user_id INTEGER NOT NULL REFERENCES users(id),
+  rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comment TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS csat_surveys_tenant_idx ON csat_surveys(tenant_id);
+CREATE INDEX IF NOT EXISTS csat_surveys_ticket_idx ON csat_surveys(ticket_id);
+CREATE INDEX IF NOT EXISTS csat_surveys_rating_idx ON csat_surveys(tenant_id, rating);
+
+
 

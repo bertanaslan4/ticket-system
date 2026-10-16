@@ -187,6 +187,15 @@ export class TicketsService {
       resolution.attachments = attachments.filter(
         (a) => a.event_id === resolution.id,
       );
+    const csat = (
+      await db.query(
+        `SELECT cs.id, cs.rating, cs.comment, cs.created_at, u.name customer_name
+         FROM csat_surveys cs
+         JOIN users u ON u.id=cs.customer_user_id
+         WHERE cs.ticket_id=$1`,
+        [t.id],
+      )
+    ).rows[0] || null;
     return {
       ...t,
       ...names,
@@ -195,6 +204,7 @@ export class TicketsService {
       orgs,
       support_companies: t.support_chain ? (await db.query('SELECT id,name FROM organizations WHERE id=ANY($1::integer[]) ORDER BY array_position($1::integer[],id)', [t.support_chain])).rows : [],
       resolution,
+      csat,
       attachments: attachments.filter((a) => a.event_id === null),
     };
   }
@@ -533,4 +543,47 @@ export class TicketsService {
     }
     return { ok: true };
   }
+  async submitCsat(ticketId: string, user: any, body: any): Promise<any> {
+    const db = this.database;
+    const u = user;
+    if (u.role !== "customer") fail(403, "only_customer_can_rate_ticket");
+    const rating = Number(body?.rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      fail(400, "invalid_rating");
+    }
+    const comment = typeof body?.comment === "string" ? body.comment.trim().slice(0, 1000) : "";
+
+    return await db.transaction(async (tx) => {
+      const t = await getTicket(tx, ticketId, u, true);
+      if (t.customer_id !== u.org_id) fail(403, "only_customer_can_rate_ticket");
+      if (t.status !== "closed") fail(400, "ticket_must_be_closed_to_rate");
+
+      const existing = (
+        await tx.query("SELECT id FROM csat_surveys WHERE ticket_id=$1", [t.id])
+      ).rows[0];
+      if (existing) fail(400, "ticket_already_rated");
+
+      const res = (
+        await tx.query(
+          "INSERT INTO csat_surveys(tenant_id, ticket_id, customer_user_id, rating, comment) VALUES($1, $2, $3, $4, $5) RETURNING *",
+          [t.tenant_id || u.tenant_id || 1, t.id, u.id, rating, comment],
+        )
+      ).rows[0];
+
+      await event(
+        tx,
+        t,
+        u,
+        "csat_rated",
+        { key: "event_csat_rated", params: { rating: String(rating) } },
+        "public",
+      );
+
+      return {
+        ...res,
+        customer_name: u.name,
+      };
+    });
+  }
 }
+

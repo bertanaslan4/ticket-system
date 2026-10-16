@@ -94,4 +94,14 @@ export class TicketsController {
       await cleanup(files);
     }
   }
+  @Post(":id/csat")
+  @HttpCode(200)
+  async submitCsat(
+    @Param("id") id: string,
+    @Body() body: any,
+    @Req() req: any,
+  ) {
+    return this.service.submitCsat(id, req.user, body);
+  }
 }
+

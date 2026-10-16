@@ -22,6 +22,7 @@ export function download(rows) {
       tr("created"),
       tr("closed_2"),
       tr("resolution_time_hours"),
+      tr("csat_score"),
     ],
     ...rows.map((t) => [
       t.id,
@@ -42,6 +43,7 @@ export function download(rows) {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           }),
+      t.csat_rating || "",
     ]),
   ];
   const url = URL.createObjectURL(

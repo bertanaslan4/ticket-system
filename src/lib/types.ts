@@ -59,6 +59,13 @@ export interface Ticket {
     actor_name: string;
     org_name: string;
   } | null;
+  csat?: {
+    id: number;
+    rating: number;
+    comment: string;
+    created_at: string;
+    customer_name?: string;
+  } | null;
   id: number;
   title: string;
   description: string;

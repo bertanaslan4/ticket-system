@@ -13,6 +13,7 @@ import Badge from "../../components/StatusBadge";
 
 import TicketTimeline from "./TicketTimeline";
 import TicketResolution from "./TicketResolution";
+import TicketCsatCard from "./TicketCsatCard";
 import TicketSubtasks from "./TicketSubtasks";
 import { customerContactRole, isCustomerContact, previousSupportCompany } from '../../../shared/support-flow.js';
 export default function Detail({ ticket: t, user, busy, onAction, back }: any) {
@@ -77,6 +78,7 @@ export default function Detail({ ticket: t, user, busy, onAction, back }: any) {
             <AttachmentList attachments={t.attachments} />
           </section>
           <TicketResolution ticket={t} />
+          <TicketCsatCard ticket={t} user={user} onRated={(csat) => { t.csat = csat; }} />
           <TicketTimeline events={t.events} />
         </div>
         <div>

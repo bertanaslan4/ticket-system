@@ -607,7 +607,32 @@ export default {
   article_updated: "Makale güncellendi",
   article_deleted: "Makale silindi",
   article_not_found: "Makale bulunamadı",
+  csat_satisfaction_survey: "Müşteri Memnuniyet Anketi",
+  csat_how_satisfied: "Çözüm sürecimizden ne kadar memnun kaldınız?",
+  csat_rating_1: "Çok Kötü",
+  csat_rating_2: "Kötü",
+  csat_rating_3: "Orta",
+  csat_rating_4: "İyi",
+  csat_rating_5: "Çok İyi",
+  csat_feedback_placeholder: "Dilerseniz ek görüş, teşekkür veya önerilerinizi buraya yazabilirsiniz...",
+  csat_submit: "Değerlendirmeyi Gönder",
+  csat_submitting: "Gönderiliyor…",
+  csat_thank_you: "Geri bildiriminiz için teşekkür ederiz!",
+  csat_thank_you_sub: "Puanınız ve görüşleriniz hizmet kalitemizi artırmamıza yardımcı olacaktır.",
+  csat_score: "Memnuniyet Puanı",
+  csat_customer_feedback: "Müşteri Geri Bildirimi",
+  csat_already_rated: "Bu istem için zaten değerlendirme yapılmış.",
+  csat_not_rated_yet: "Müşteri henüz değerlendirme yapmadı.",
+  csat_average_score: "Ortalama CSAT Puanı",
+  csat_total_surveys: "Toplam Değerlendirme",
+  csat_score_distribution: "Puan Dağılımı",
+  csat_card_title: "Müşteri Memnuniyeti & Karne",
+  event_csat_rated: "Müşteri {rating} yıldız ile memnuniyet değerlendirmesi yaptı.",
+  ticket_must_be_closed_to_rate: "Yalnızca kapatılmış destek istemleri değerlendirilebilir.",
+  only_customer_can_rate_ticket: "Yalnızca müşteri bu istemi değerlendirebilir.",
+  invalid_rating: "Lütfen 1 ile 5 arasında geçerli bir puan seçin.",
 };
+
 
 
 

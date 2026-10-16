@@ -47,7 +47,7 @@ export class ReportsService {
       if (query[key]) add(`t.${key}=?`, option(query[key], values));
     const rows = (
       await db.query(
-        `SELECT t.id,t.product_id,t.title,t.type,t.status,t.severity,t.program,t.created_at,t.updated_at,t.first_responded_at,t.sla_first_response_due_at,t.sla_resolution_due_at,c.name customer_name,COALESCE(d.name,'—') dealer_name,o.name owner_name,u.name assignee_name,COALESCE(t.closed_at,closed.closed_at) closed_at,EXTRACT(EPOCH FROM (COALESCE(t.closed_at,closed.closed_at)-t.created_at))/3600 resolution_hours FROM tickets t JOIN organizations c ON c.id=t.customer_id LEFT JOIN organizations d ON d.id=COALESCE(t.support_chain[1],t.dealer_id) JOIN organizations o ON o.id=t.owner_org_id LEFT JOIN users u ON u.id=t.assignee_id LEFT JOIN LATERAL (SELECT max(created_at) closed_at FROM events WHERE ticket_id=t.id AND kind='closed') closed ON true ${clauses.length ? "WHERE " + clauses.join(" AND ") : ""} ORDER BY t.created_at DESC,t.id DESC`,
+        `SELECT t.id,t.product_id,t.title,t.type,t.status,t.severity,t.program,t.created_at,t.updated_at,t.first_responded_at,t.sla_first_response_due_at,t.sla_resolution_due_at,c.name customer_name,COALESCE(d.name,'—') dealer_name,o.name owner_name,u.name assignee_name,cs.rating csat_rating,cs.comment csat_comment,COALESCE(t.closed_at,closed.closed_at) closed_at,EXTRACT(EPOCH FROM (COALESCE(t.closed_at,closed.closed_at)-t.created_at))/3600 resolution_hours FROM tickets t JOIN organizations c ON c.id=t.customer_id LEFT JOIN organizations d ON d.id=COALESCE(t.support_chain[1],t.dealer_id) JOIN organizations o ON o.id=t.owner_org_id LEFT JOIN users u ON u.id=t.assignee_id LEFT JOIN csat_surveys cs ON cs.ticket_id=t.id LEFT JOIN LATERAL (SELECT max(created_at) closed_at FROM events WHERE ticket_id=t.id AND kind='closed') closed ON true ${clauses.length ? "WHERE " + clauses.join(" AND ") : ""} ORDER BY t.created_at DESC,t.id DESC`,
         params,
       )
     ).rows.map((r) => enrichTicketSla(r));
@@ -56,6 +56,22 @@ export class ReportsService {
       const matching = rows.filter(r => r.product_id === p.id);
       return {id:p.id,name:p.name,count:matching.length,open:matching.filter(r => r.status !== 'closed').length,closed:matching.filter(r => r.status === 'closed').length};
     });
+    const csatStats = (
+      await db.query(
+        `SELECT
+           COUNT(cs.id)::int as total,
+           ROUND(AVG(cs.rating)::numeric, 1)::float as average,
+           COUNT(CASE WHEN cs.rating = 5 THEN 1 END)::int as stars_5,
+           COUNT(CASE WHEN cs.rating = 4 THEN 1 END)::int as stars_4,
+           COUNT(CASE WHEN cs.rating = 3 THEN 1 END)::int as stars_3,
+           COUNT(CASE WHEN cs.rating = 2 THEN 1 END)::int as stars_2,
+           COUNT(CASE WHEN cs.rating = 1 THEN 1 END)::int as stars_1
+         FROM csat_surveys cs
+         JOIN tickets t ON t.id = cs.ticket_id
+         ${clauses.length ? "WHERE " + clauses.join(" AND ") : ""}`,
+        params,
+      )
+    ).rows[0] || { total: 0, average: null, stars_5: 0, stars_4: 0, stars_3: 0, stars_2: 0, stars_1: 0 };
     const group = (key) =>
       Object.entries(
         rows.reduce((acc, r) => {
@@ -81,6 +97,17 @@ export class ReportsService {
         ? resolved.reduce((n, r) => n + Number(r.resolution_hours), 0) /
           resolved.length
         : null,
+      csat: {
+        total: Number(csatStats.total || 0),
+        average: csatStats.average !== null ? Number(csatStats.average) : null,
+        distribution: {
+          5: Number(csatStats.stars_5 || 0),
+          4: Number(csatStats.stars_4 || 0),
+          3: Number(csatStats.stars_3 || 0),
+          2: Number(csatStats.stars_2 || 0),
+          1: Number(csatStats.stars_1 || 0),
+        },
+      },
       byStatus: group("status"),
       bySeverity: group("severity"),
       byCustomer: group("customer_name"),
