@@ -1,6 +1,7 @@
 import { MailService } from "../mail/mail.service.js";
 import { AttachmentStorage } from "./attachments.js";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Optional } from "@nestjs/common";
+import { IntegrationsService } from "../integrations/integrations.service.js";
 import { DatabaseService } from "../database/database.service.js";
 import { fail, text, choice, userSql, enrichTicketSla, applyTicketSlaTargets } from "../common/domain.js";
 import { translate } from "../../shared/i18n.js";
@@ -55,6 +56,7 @@ export class TicketsService {
     private readonly database: DatabaseService,
     private readonly storage: AttachmentStorage,
     private readonly mail: MailService,
+    @Optional() private readonly integrations?: IntegrationsService,
   ) {}
   async withFiles(files: any[], work: (items: any[]) => Promise<any>) {
     const items = await this.storage.save(files);
@@ -296,6 +298,7 @@ export class TicketsService {
       await this.mail.enqueue(tx, created.rows[0].id, 'assigned', t, recipients);
       return enrichTicketSla(t);
     });
+    this.integrations?.dispatchTicketNotification(ticket.tenant_id || 1, "ticket.created", ticket);
     return ticket;
   }
   async action(
@@ -525,6 +528,9 @@ export class TicketsService {
       }
       await tx.query("UPDATE tickets SET updated_at=now() WHERE id=$1", [t.id]);
     });
+    if (b.action === "close") {
+      this.integrations?.dispatchTicketNotification(u.tenant_id || 1, "ticket.closed", { id });
+    }
     return { ok: true };
   }
 }

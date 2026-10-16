@@ -13,6 +13,7 @@ import Badge from "../../components/StatusBadge";
 
 import TicketTimeline from "./TicketTimeline";
 import TicketResolution from "./TicketResolution";
+import TicketSubtasks from "./TicketSubtasks";
 import { customerContactRole, isCustomerContact, previousSupportCompany } from '../../../shared/support-flow.js';
 export default function Detail({ ticket: t, user, busy, onAction, back }: any) {
   useLanguage();
@@ -134,6 +135,7 @@ export default function Detail({ ticket: t, user, busy, onAction, back }: any) {
               <dd>{date(t.updated_at)}</dd>
             </dl>
           </section>
+          <TicketSubtasks ticketId={t.id} user={user} />
           {t.status !== "closed" && !canComment ? (
             <div className="panel detail-section"><p className="hint">{tr("comment_requires_current_owner")}</p></div>
           ) : t.status !== "closed" ? (

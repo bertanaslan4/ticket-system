@@ -14,6 +14,8 @@ import { TenantsModule } from './tenants/tenants.module.js';
 import { OperationsModule } from './operations/operations.module.js';
 import { BillingModule } from './billing/billing.module.js';
 import { KnowledgeBaseModule } from './kb/kb.module.js';
+import { TasksModule } from './tasks/tasks.module.js';
+import { IntegrationsModule } from './integrations/integrations.module.js';
 @Module({})
 export class AppModule {
   static register(db: any): DynamicModule {
@@ -31,6 +33,8 @@ export class AppModule {
         OperationsModule,
         BillingModule,
         KnowledgeBaseModule,
+        TasksModule,
+        IntegrationsModule,
         UsersModule,
         ReportsModule,
         AuditModule,

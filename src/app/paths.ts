@@ -13,6 +13,8 @@ export const paths: Record<string, string> = {
   tenants: "/admin/tenants",
   operations: "/admin/operations",
   kb: "/kb",
+  tasks: "/tasks",
+  integrations: "/admin/integrations",
 };
 export function viewForPath(path: string) {
   return (

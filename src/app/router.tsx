@@ -69,6 +69,7 @@ export const routes: RouteObject[] = [
           { path: "tickets", element: <TicketListPage /> },
           { path: "kb", lazy: async () => ({ Component: (await import('../features/kb/KnowledgeBasePage')).default }) },
           { path: "profile", lazy: async () => ({ Component: (await import('../features/profile/ProfilePage')).default }) },
+          { path: "tasks", lazy: async () => ({ Component: (await import('../features/tasks/TasksPage')).default }) },
           {
             element: <ProtectedRoute roles={["customer"]} />,
             children: [
@@ -91,6 +92,13 @@ export const routes: RouteObject[] = [
           {
             element: <ProtectedRoute roles={["super_admin"]} />,
             children: [
+              {
+                path: "admin/integrations",
+                lazy: async () => ({
+                  Component: (await import("../features/admin/IntegrationsPage"))
+                    .default,
+                }),
+              },
               {
                 path: "admin/tenants",
                 lazy: async () => ({

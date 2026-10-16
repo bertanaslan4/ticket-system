@@ -299,3 +299,48 @@ CREATE TABLE IF NOT EXISTS knowledge_base (
 CREATE INDEX IF NOT EXISTS knowledge_base_tenant_idx ON knowledge_base(tenant_id);
 CREATE INDEX IF NOT EXISTS knowledge_base_slug_idx ON knowledge_base(tenant_id, slug);
 CREATE INDEX IF NOT EXISTS knowledge_base_search_idx ON knowledge_base(tenant_id, is_public);
+
+-- Phase 8: Jira-style Internal Tasks & Kanban Board
+CREATE TABLE IF NOT EXISTS tasks (
+  id SERIAL PRIMARY KEY,
+  tenant_id INTEGER NOT NULL DEFAULT 1 REFERENCES tenants(id) ON DELETE CASCADE,
+  ticket_id INTEGER REFERENCES tickets(id) ON DELETE SET NULL,
+  task_number TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'todo' CHECK(status IN ('backlog','todo','in_progress','review','done')),
+  priority TEXT NOT NULL DEFAULT 'medium' CHECK(priority IN ('low','medium','high','urgent')),
+  assignee_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  reporter_id INTEGER NOT NULL REFERENCES users(id),
+  estimated_minutes INTEGER NOT NULL DEFAULT 0,
+  due_date TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS tasks_tenant_idx ON tasks(tenant_id, status);
+CREATE INDEX IF NOT EXISTS tasks_ticket_idx ON tasks(ticket_id);
+CREATE INDEX IF NOT EXISTS tasks_assignee_idx ON tasks(assignee_id);
+
+CREATE TABLE IF NOT EXISTS task_worklogs (
+  id SERIAL PRIMARY KEY,
+  task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  minutes_spent INTEGER NOT NULL CHECK(minutes_spent > 0),
+  description TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS task_worklogs_task_idx ON task_worklogs(task_id, id DESC);
+
+-- Phase 8: Tenant Custom SMTP and Teams/Slack Webhooks
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS smtp_host TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS smtp_port INTEGER;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS smtp_secure BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS smtp_user TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS smtp_pass_encrypted TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS smtp_from_name TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS smtp_from_email TEXT;
+
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS webhook_teams_url TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS webhook_slack_url TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS webhook_events TEXT NOT NULL DEFAULT 'ticket.created,ticket.closed,ticket.urgent';
+

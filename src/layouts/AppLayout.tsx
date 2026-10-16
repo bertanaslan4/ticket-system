@@ -12,6 +12,8 @@ import {
   Cloud,
   UserRound,
   BookOpen,
+  Kanban,
+  Radio,
 } from "lucide-react";
 
 import { tr, locale } from "../i18n/index.js";
@@ -77,6 +79,7 @@ export default function AppLayout() {
               ["productReports", tr("product_reports"), BarChart3],
               ["audit", tr("admin_activity"), ShieldCheck],
               ["storage", tr("cloud_settings"), Cloud],
+              ["integrations", "Entegrasyonlar", Radio],
             ].map(([key, label, Icon]: any) => (
               <button
                 key={key}
@@ -102,6 +105,15 @@ export default function AppLayout() {
             {tr("tickets")}
             <span>{ticketCount}</span>
           </button>
+          {user.role !== "customer" && (
+            <button
+              className={view === "tasks" ? "active" : ""}
+              onClick={() => navigate("tasks")}
+            >
+              <Kanban size={18} />
+              Görevler & Kanban
+            </button>
+          )}
           <button
             className={view === "kb" ? "active" : ""}
             onClick={() => navigate("kb")}
