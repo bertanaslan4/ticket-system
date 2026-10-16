@@ -8,9 +8,10 @@ import QueryState from "../../components/QueryState";
 import type { Tenant } from "../../lib/types";
 
 const PLAN_PRESETS: Record<
-  "starter" | "pro" | "enterprise",
+  "free" | "starter" | "pro" | "enterprise",
   { agent_limit: number; storage_limit_mb: number }
 > = {
+  free: { agent_limit: 1, storage_limit_mb: 500 },
   starter: { agent_limit: 5, storage_limit_mb: 10240 },
   pro: { agent_limit: 15, storage_limit_mb: 51200 },
   enterprise: { agent_limit: 100, storage_limit_mb: 256000 },
@@ -20,7 +21,7 @@ interface TenantFormState {
   id?: number;
   name: string;
   slug: string;
-  plan_tier: "starter" | "pro" | "enterprise";
+  plan_tier: "free" | "starter" | "pro" | "enterprise";
   status: "trial" | "active" | "past_due" | "suspended";
   agent_limit: number;
   storage_limit_mb: number;
@@ -41,10 +42,27 @@ export default function TenantsPage() {
   const { user, refresh } = useAuth();
   const client = useQueryClient();
   const [editing, setEditing] = useState<TenantFormState | null>(null);
+  const [purchaseNotice, setPurchaseNotice] = useState(false);
 
   const query = useQuery({
     queryKey: ["admin", "tenants"],
     queryFn: ({ signal }) => api<Tenant[]>("/admin/tenants", undefined, signal),
+  });
+
+  const catalogQuery = useQuery({
+    queryKey: ["billing", "catalog", user?.tenant_id],
+    queryFn: ({ signal }) => api<any>("/billing/catalog", undefined, signal),
+  });
+
+  const purchaseMutation = useMutation({
+    mutationFn: (product_id: string) =>
+      api("/billing/purchase", { product_id, store: "stripe" }),
+    onSuccess: async () => {
+      setPurchaseNotice(true);
+      await client.invalidateQueries({ queryKey: ["billing"] });
+      await client.invalidateQueries({ queryKey: ["admin"] });
+      await refresh();
+    },
   });
 
   const saveMutation = useMutation({
@@ -53,6 +71,7 @@ export default function TenantsPage() {
     onSuccess: async () => {
       setEditing(null);
       await client.invalidateQueries({ queryKey: ["admin"] });
+      await client.invalidateQueries({ queryKey: ["billing"] });
       await refresh();
     },
   });
@@ -73,7 +92,9 @@ export default function TenantsPage() {
       ? tr("plan_enterprise")
       : tier === "pro"
         ? tr("plan_pro")
-        : tr("plan_starter");
+        : tier === "free"
+          ? tr("plan_free")
+          : tr("plan_starter");
 
   const statusLabel = (status: string) =>
     status === "trial"
@@ -112,6 +133,141 @@ export default function TenantsPage() {
           {tr("add_tenant")}
         </button>
       </div>
+
+      {catalogQuery.data && (
+        <section className="panel" style={{ marginBottom: 20 }}>
+          <div className="panel-head">
+            <div>
+              <h2>{tr("self_service_billing")}</h2>
+              <p className="muted">{tr("self_service_billing_intro")}</p>
+            </div>
+            {catalogQuery.data.tenant?.invite_code && (
+              <div style={{ textAlign: "right" }}>
+                <small className="muted">{tr("customer_invite_code")}</small>
+                <div>
+                  <span className="badge open" style={{ fontSize: 15 }}>
+                    {catalogQuery.data.tenant.invite_code}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+          <p className="hint" style={{ marginBottom: 14 }}>
+            {tr("customer_invite_code_hint")}
+          </p>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 12,
+              marginBottom: 16,
+            }}
+          >
+            <div className="stat-card">
+              <small className="muted">{tr("current_plan")}</small>
+              <div>
+                <strong>{planLabel(catalogQuery.data.tenant?.plan_tier)}</strong>
+              </div>
+            </div>
+            <div className="stat-card">
+              <small className="muted">{tr("agent_quota_usage")}</small>
+              <div>
+                <strong>
+                  {catalogQuery.data.tenant?.agent_used} /{" "}
+                  {catalogQuery.data.tenant?.agent_limit}
+                </strong>
+              </div>
+            </div>
+            <div className="stat-card">
+              <small className="muted">{tr("customer_org_quota")}</small>
+              <div>
+                <strong>
+                  {catalogQuery.data.tenant?.customer_org_used} /{" "}
+                  {catalogQuery.data.tenant?.customer_org_limit}
+                </strong>
+              </div>
+            </div>
+            <div className="stat-card">
+              <small className="muted">{tr("monthly_ticket_quota")}</small>
+              <div>
+                <strong>
+                  {catalogQuery.data.tenant?.monthly_ticket_used} /{" "}
+                  {catalogQuery.data.tenant?.monthly_ticket_limit}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          {purchaseNotice && (
+            <div className="badge closed" style={{ marginBottom: 12 }}>
+              {tr("purchase_success")}
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 12,
+            }}
+          >
+            {catalogQuery.data.plans
+              ?.filter((p: any) => p.tier !== "free")
+              .map((plan: any) => {
+                const isCurrent =
+                  catalogQuery.data.tenant?.plan_tier === plan.tier;
+                return (
+                  <div
+                    key={plan.product_id}
+                    className="panel"
+                    style={{ padding: 14, margin: 0 }}
+                  >
+                    <strong>{planLabel(plan.tier)}</strong>
+                    <div style={{ margin: "6px 0", fontSize: 18 }}>
+                      <strong>
+                        {plan.price_try} TL {tr("per_month")}
+                      </strong>
+                    </div>
+                    <small className="muted" style={{ display: "block", marginBottom: 10 }}>
+                      {plan.agent_limit} Agent · {(plan.storage_limit_mb / 1024).toFixed(0)} GB
+                    </small>
+                    <button
+                      type="button"
+                      className={isCurrent ? "secondary" : "primary"}
+                      disabled={isCurrent || purchaseMutation.isPending}
+                      onClick={() => purchaseMutation.mutate(plan.product_id)}
+                    >
+                      {isCurrent ? tr("current_plan") : tr("upgrade_now")}
+                    </button>
+                  </div>
+                );
+              })}
+            {catalogQuery.data.addons?.map((addon: any) => (
+              <div
+                key={addon.product_id}
+                className="panel"
+                style={{ padding: 14, margin: 0 }}
+              >
+                <strong>{tr(addon.title_key)}</strong>
+                <div style={{ margin: "6px 0", fontSize: 18 }}>
+                  <strong>
+                    +{addon.price_try} TL {tr("per_month")}
+                  </strong>
+                </div>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={purchaseMutation.isPending}
+                  onClick={() => purchaseMutation.mutate(addon.product_id)}
+                >
+                  {tr("buy_addon")}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {editing && (
         <Modal
@@ -179,6 +335,7 @@ export default function TenantsPage() {
                   disabled={saveMutation.isPending}
                   onChange={(e) => {
                     const tier = e.target.value as
+                      | "free"
                       | "starter"
                       | "pro"
                       | "enterprise";
@@ -191,6 +348,7 @@ export default function TenantsPage() {
                     });
                   }}
                 >
+                  <option value="free">{tr("plan_free")}</option>
                   <option value="starter">{tr("plan_starter")}</option>
                   <option value="pro">{tr("plan_pro")}</option>
                   <option value="enterprise">{tr("plan_enterprise")}</option>

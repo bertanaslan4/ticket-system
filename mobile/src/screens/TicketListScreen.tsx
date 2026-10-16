@@ -29,11 +29,13 @@ export default function TicketListScreen({
   user,
   onSelectTicket,
   onNewTicket,
+  onOpenPaywall,
   onLogout,
 }: {
   user: any;
   onSelectTicket: (ticketId: number) => void;
   onNewTicket: () => void;
+  onOpenPaywall?: () => void;
   onLogout: () => void;
 }) {
   const isCustomer = user.role === "customer";
@@ -88,6 +90,11 @@ export default function TicketListScreen({
           <Text style={styles.headerTitle}>Destek İstemleri</Text>
         </View>
         <View style={styles.headerActions}>
+          {!isCustomer && onOpenPaywall && (
+            <TouchableOpacity style={styles.notifBtn} onPress={onOpenPaywall}>
+              <Text style={styles.notifBtnText}>Paket / Kod</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.notifBtn}
             onPress={() => setShowNotifications((v) => !v)}

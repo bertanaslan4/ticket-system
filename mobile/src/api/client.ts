@@ -151,6 +151,61 @@ export const mobileApi = {
     return mobileRequest("/tickets", { method: "POST", body, files });
   },
 
+  async signup(body: {
+    company_name: string;
+    admin_name: string;
+    email: string;
+    password: string;
+    industry_template?: string;
+  }) {
+    const res = await mobileRequest<{ ok: boolean; token?: string }>(
+      "/public/signup",
+      {
+        method: "POST",
+        body,
+      },
+    );
+    if (res.token) {
+      await saveSessionToken(res.token);
+    }
+    return this.me();
+  },
+
+  async join(body: {
+    invite_code: string;
+    name: string;
+    email: string;
+    password: string;
+    company_name?: string;
+  }) {
+    const res = await mobileRequest<{ ok: boolean; token?: string }>(
+      "/public/join",
+      {
+        method: "POST",
+        body,
+      },
+    );
+    if (res.token) {
+      await saveSessionToken(res.token);
+    }
+    return this.me();
+  },
+
+  getBillingCatalog() {
+    return mobileRequest<any>("/billing/catalog");
+  },
+
+  purchaseIap(
+    product_id: string,
+    store: "app_store" | "play_store" | "stripe" = "app_store",
+    transaction_id?: string,
+  ) {
+    return mobileRequest<any>("/billing/purchase", {
+      method: "POST",
+      body: { product_id, store, transaction_id },
+    });
+  },
+
   ticketAction(id: number, body: Record<string, any>, files: MediaAttachment[] = []) {
     return mobileRequest(`/tickets/${id}/actions`, {
       method: "POST",

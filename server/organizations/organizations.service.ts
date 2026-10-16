@@ -82,6 +82,26 @@ export class OrganizationsService {
         ).rows.length
       )
         fail(409, "this_company_name_is_already_in_use");
+      if (!id && kind === "customer") {
+        const tenant = (
+          await tx.query("SELECT customer_org_limit FROM tenants WHERE id=$1", [
+            tenantId,
+          ])
+        ).rows[0];
+        const custOrgCount = Number(
+          (
+            await tx.query(
+              "SELECT count(*) FROM organizations WHERE tenant_id=$1 AND kind='customer'",
+              [tenantId],
+            )
+          ).rows[0].count,
+        );
+        if (custOrgCount >= (tenant?.customer_org_limit ?? 10000)) {
+          fail(403, "customer_org_limit_reached", {
+            limit: tenant?.customer_org_limit ?? 3,
+          });
+        }
+      }
       const row = (
         await tx.query(
           id

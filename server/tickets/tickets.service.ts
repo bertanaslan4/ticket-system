@@ -224,6 +224,23 @@ export class TicketsService {
       );
       if (count >= org.daily_limit)
         fail(429, "you_have_reached_your_daily_ticket_limit_please_try");
+      const tenantRow = (
+        await tx.query("SELECT monthly_ticket_limit FROM tenants WHERE id=$1", [
+          tenantId,
+        ])
+      ).rows[0];
+      const monthlyCount = Number(
+        (
+          await tx.query(
+            "SELECT count(*) FROM tickets WHERE tenant_id=$1 AND date_trunc('month', created_at AT TIME ZONE 'Europe/Istanbul') = date_trunc('month', now() AT TIME ZONE 'Europe/Istanbul')",
+            [tenantId],
+          )
+        ).rows[0].count,
+      );
+      if (monthlyCount >= (tenantRow?.monthly_ticket_limit ?? 100000))
+        fail(403, "monthly_ticket_limit_reached", {
+          limit: tenantRow?.monthly_ticket_limit ?? 25,
+        });
       if (org.support_chain?.length) {
         const companies = (await tx.query("SELECT id,name FROM organizations WHERE id=ANY($1::integer[]) AND tenant_id=$2 AND kind IN ('support','dealer','contractor')", [org.support_chain, tenantId])).rows;
         if (companies.length !== org.support_chain.length) fail(400, 'support_chain_invalid');

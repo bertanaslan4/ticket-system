@@ -16,7 +16,7 @@ import { str, integer, option, email, audit } from "../common/admin-domain.js";
 import { fail } from "../common/domain.js";
 import { hashPassword } from "../auth.js";
 
-const PLAN_TIERS = ["starter", "pro", "enterprise"];
+const PLAN_TIERS = ["free", "starter", "pro", "enterprise"];
 const TENANT_STATUSES = ["trial", "active", "past_due", "suspended"];
 
 @Injectable()

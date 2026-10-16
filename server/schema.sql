@@ -206,4 +206,34 @@ CREATE TABLE IF NOT EXISTS push_outbox (
 );
 CREATE INDEX IF NOT EXISTS push_outbox_user_idx ON push_outbox(user_id, id DESC);
 
+-- Phase 4: Self-Service Onboarding, Free Tier Quotas, Invite Codes, and In-App Purchases (IAP)
+ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_plan_tier_check;
+ALTER TABLE tenants ADD CONSTRAINT tenants_plan_tier_check CHECK(plan_tier IN ('free','starter','pro','enterprise'));
+
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS invite_code TEXT UNIQUE;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS industry_template TEXT NOT NULL DEFAULT 'general';
+ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_industry_template_check;
+ALTER TABLE tenants ADD CONSTRAINT tenants_industry_template_check CHECK(industry_template IN ('general','technical_service','field_service','agency','facility','ecommerce','software','it_software'));
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS customer_org_limit INTEGER NOT NULL DEFAULT 10000 CHECK(customer_org_limit > 0);
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS monthly_ticket_limit INTEGER NOT NULL DEFAULT 100000 CHECK(monthly_ticket_limit > 0);
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS store_provider TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS store_product_id TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMPTZ;
+
+UPDATE tenants SET invite_code = 'BKT-' || lpad(id::text, 4, '0') WHERE invite_code IS NULL;
+
+CREATE TABLE IF NOT EXISTS iap_transactions (
+ id SERIAL PRIMARY KEY,
+ tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+ store TEXT NOT NULL CHECK(store IN ('app_store','play_store','stripe','promo')),
+ product_id TEXT NOT NULL,
+ event_type TEXT NOT NULL,
+ transaction_id TEXT NOT NULL UNIQUE,
+ price_currency TEXT NOT NULL DEFAULT 'TRY',
+ price_amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+ raw_payload JSONB NOT NULL DEFAULT '{}',
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS iap_transactions_tenant_idx ON iap_transactions(tenant_id, id DESC);
+
 

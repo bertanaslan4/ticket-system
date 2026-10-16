@@ -16,8 +16,12 @@ export default function LoginScreen({
 }: {
   onAuthenticated: (user: any) => void;
 }) {
+  const [mode, setMode] = useState<"login" | "signup" | "join">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [serverUrl, setServerUrl] = useState("http://localhost:3000/api");
   const [showServerConfig, setShowServerConfig] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,10 +36,30 @@ export default function LoginScreen({
     setLoading(true);
     try {
       await setApiBaseUrl(serverUrl);
-      const user = await mobileApi.login(email.trim(), password);
-      onAuthenticated(user);
+      if (mode === "signup") {
+        const user = await mobileApi.signup({
+          company_name: companyName.trim(),
+          admin_name: name.trim(),
+          email: email.trim(),
+          password,
+          industry_template: "it_software",
+        });
+        onAuthenticated(user);
+      } else if (mode === "join") {
+        const user = await mobileApi.join({
+          invite_code: inviteCode.trim().toUpperCase(),
+          name: name.trim(),
+          email: email.trim(),
+          password,
+          company_name: companyName.trim() || undefined,
+        });
+        onAuthenticated(user);
+      } else {
+        const user = await mobileApi.login(email.trim(), password);
+        onAuthenticated(user);
+      }
     } catch (err: any) {
-      setError(err.message || "Giriş yapılamadı.");
+      setError(err.message || "İşlem tamamlanamadı.");
     } finally {
       setLoading(false);
     }
@@ -50,15 +74,95 @@ export default function LoginScreen({
         <View style={styles.badge}>
           <Text style={styles.badgeText}>BEKATOS · DESTEK MERKEZİ</Text>
         </View>
-        <Text style={styles.title}>Çalışma Alanına Giriş</Text>
+        <Text style={styles.title}>
+          {mode === "signup"
+            ? "Ücretsiz İşletme Aç"
+            : mode === "join"
+              ? "Davet Koduyla Katıl"
+              : "Çalışma Alanına Giriş"}
+        </Text>
         <Text style={styles.subtitle}>
           Müşteri, bayi ve ana destek ekibi süreçlerinizi sahadan yönetin.
         </Text>
+
+        <View style={{ flexDirection: "row", gap: 6, marginBottom: 12 }}>
+          {(
+            [
+              ["login", "Giriş Yap"],
+              ["signup", "İşletme Aç"],
+              ["join", "Davet Kodu"],
+            ] as const
+          ).map(([key, label]) => (
+            <TouchableOpacity
+              key={key}
+              style={{
+                flex: 1,
+                paddingVertical: 8,
+                borderRadius: 8,
+                backgroundColor: mode === key ? "#2563eb" : "#0f172a",
+                alignItems: "center",
+              }}
+              onPress={() => {
+                setError(null);
+                setMode(key);
+              }}
+            >
+              <Text
+                style={{
+                  color: mode === key ? "#ffffff" : "#94a3b8",
+                  fontSize: 12,
+                  fontWeight: "700",
+                }}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         {error && (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
+        )}
+
+        {mode === "join" && (
+          <>
+            <Text style={styles.label}>Çalışma Alanı Davet Kodu</Text>
+            <TextInput
+              style={styles.input}
+              autoCapitalize="characters"
+              placeholder="Örn: BKT-4829"
+              placeholderTextColor="#64748b"
+              value={inviteCode}
+              onChangeText={setInviteCode}
+            />
+          </>
+        )}
+
+        {(mode === "signup" || mode === "join") && (
+          <>
+            <Text style={styles.label}>
+              {mode === "signup"
+                ? "İşletme / Destek Ekibi Adı"
+                : "Firmanızın Adı (İsteğe Bağlı)"}
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Örn: Nova Yazılım Destek"
+              placeholderTextColor="#64748b"
+              value={companyName}
+              onChangeText={setCompanyName}
+            />
+            <Text style={styles.label}>Ad Soyad</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Adınız Soyadınız"
+              placeholderTextColor="#64748b"
+              value={name}
+              onChangeText={setName}
+            />
+          </>
         )}
 
         <Text style={styles.label}>E-posta Adresi</Text>
@@ -113,7 +217,13 @@ export default function LoginScreen({
           {loading ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <Text style={styles.buttonText}>Oturum Aç</Text>
+            <Text style={styles.buttonText}>
+              {mode === "signup"
+                ? "Ücretsiz Çalışma Alanını Başlat"
+                : mode === "join"
+                  ? "Çalışma Alanına Katıl"
+                  : "Oturum Aç"}
+            </Text>
           )}
         </TouchableOpacity>
       </View>

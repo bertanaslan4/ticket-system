@@ -5,6 +5,7 @@ import { useAuth } from "./AuthProvider";
 import LoginForm from "./LoginForm";
 import QueryState from "../../components/QueryState";
 import { tr } from "../../i18n/index.js";
+import { api } from "../../lib/api";
 export default function LoginPage() {
   useLanguage();
   const auth = useAuth(),
@@ -41,6 +42,30 @@ export default function LoginPage() {
         setError(null);
         try {
           await auth.login(body);
+        } catch (e) {
+          setError(e);
+        } finally {
+          setBusy(false);
+        }
+      }}
+      onSignup={async (body: unknown) => {
+        setBusy(true);
+        setError(null);
+        try {
+          await api("/public/signup", body);
+          await auth.refresh();
+        } catch (e) {
+          setError(e);
+        } finally {
+          setBusy(false);
+        }
+      }}
+      onJoin={async (body: unknown) => {
+        setBusy(true);
+        setError(null);
+        try {
+          await api("/public/join", body);
+          await auth.refresh();
         } catch (e) {
           setError(e);
         } finally {

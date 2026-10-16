@@ -8,6 +8,7 @@ import LoginScreen from "./src/screens/LoginScreen";
 import TicketListScreen from "./src/screens/TicketListScreen";
 import NewTicketScreen from "./src/screens/NewTicketScreen";
 import TicketDetailScreen from "./src/screens/TicketDetailScreen";
+import PaywallScreen from "./src/screens/PaywallScreen";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -23,6 +24,7 @@ export default function App() {
   const [screen, setScreen] = useState<
     | { name: "list" }
     | { name: "new" }
+    | { name: "paywall" }
     | { name: "detail"; ticketId: number }
   >({ name: "list" });
 
@@ -105,6 +107,13 @@ export default function App() {
           onCancel={() => setScreen({ name: "list" })}
           onCreated={(ticketId) => setScreen({ name: "detail", ticketId })}
         />
+      ) : screen.name === "paywall" ? (
+        <PaywallScreen
+          onBack={() => setScreen({ name: "list" })}
+          onPurchased={() => {
+            mobileApi.me().then(setUser).catch(() => {});
+          }}
+        />
       ) : screen.name === "detail" ? (
         <TicketDetailScreen
           ticketId={screen.ticketId}
@@ -118,6 +127,7 @@ export default function App() {
             setScreen({ name: "detail", ticketId })
           }
           onNewTicket={() => setScreen({ name: "new" })}
+          onOpenPaywall={() => setScreen({ name: "paywall" })}
           onLogout={handleLogout}
         />
       )}
