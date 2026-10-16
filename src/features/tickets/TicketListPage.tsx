@@ -105,6 +105,7 @@ export default function TicketListPage({
                 tickets.length,
                 tr("all_your_requests"),
                 "all",
+                "primary",
               ],
               [
                 Activity,
@@ -114,6 +115,7 @@ export default function TicketListPage({
                 ).length,
                 tr("teams_are_working_on_them"),
                 "active",
+                "warning",
               ],
               [
                 Clock3,
@@ -121,6 +123,7 @@ export default function TicketListPage({
                 tickets.filter((t) => t.status === "review").length,
                 tr("final_checks_in_progress"),
                 "review",
+                "info",
               ],
               [
                 CheckCircle2,
@@ -128,29 +131,32 @@ export default function TicketListPage({
                 tickets.filter((t) => t.status === "closed").length,
                 tr("successfully_completed"),
                 "closed",
+                "success",
               ],
-            ].map(([Icon, label, n, caption, f]: any) => (
+            ].map(([Icon, label, n, caption, f, theme]: any) => (
               <button
-                className="stat"
+                className={`stat stat-${theme}`}
                 key={label}
                 onClick={() => {
                   go("/tickets?status=" + f);
                 }}
               >
-                <div>
-                  <span>{label}</span>
-                  <Icon size={19} />
+                <div className="stat-header">
+                  <span className="stat-label">{label}</span>
+                  <div className={`stat-icon stat-icon-${theme}`}>
+                    <Icon size={20} />
+                  </div>
                 </div>
-                <strong>{String(n).padStart(2, "0")}</strong>
-                <small>{caption}</small>
+                <strong className="stat-number">{String(n).padStart(2, "0")}</strong>
+                <small className="stat-caption">{caption}</small>
               </button>
             ))}
           </div>
           <div className="overview-banner">
             <div className="banner-mark">
-              <ShieldCheck size={30} />
+              <ShieldCheck size={28} />
             </div>
-            <div>
+            <div className="banner-content">
               <strong>
                 {user.role === "customer"
                   ? tr("closer_to_a_solution_together")
@@ -164,12 +170,14 @@ export default function TicketListPage({
             </div>
             {user.role === "customer" && (
               <div className="quota">
-                <strong>
-                  {user.used}
-                  <span> / {user.daily_limit}</span>
-                </strong>
-                <small>{tr("today_s_ticket_usage")}</small>
-                <div>
+                <div className="quota-text">
+                  <small>{tr("today_s_ticket_usage")}</small>
+                  <strong>
+                    {user.used}
+                    <span> / {user.daily_limit}</span>
+                  </strong>
+                </div>
+                <div className="quota-bar">
                   <i
                     style={{
                       width:

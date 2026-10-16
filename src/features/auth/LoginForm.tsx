@@ -36,12 +36,12 @@ export default function Login({
             <img
               src="/bekatos-logo.png"
               alt="Bekatos"
-              style={{ maxHeight: 48, width: "auto" }}
+              style={{ maxHeight: 46, width: "auto" }}
             />
           </span>
           <small>{tr("support_center")}</small>
         </div>
-        <div>
+        <div className="login-story-body">
           <div className="eyebrow">{tr("one_platform_shared_solutions")}</div>
           <h1>
             {tr("great_support")}
@@ -53,18 +53,68 @@ export default function Login({
             <br />
             {tr("every_request_in_one_place")}
           </p>
+          <div className="login-features">
+            <div className="login-feature-item">
+              <span className="feature-dot" />
+              <span>SLA ve Çözüm Hedefleri Takibi</span>
+            </div>
+            <div className="login-feature-item">
+              <span className="feature-dot" />
+              <span>Müşteri ➔ Bayi ➔ Yüklenici Akışı</span>
+            </div>
+            <div className="login-feature-item">
+              <span className="feature-dot" />
+              <span>Tam Firma ve Veri İzolasyonu</span>
+            </div>
+          </div>
           <div className="login-path">
-            {tr("customer")}
-            <ArrowRight />
-            {tr("support_company")}
+            <span>{tr("customer")}</span>
+            <ArrowRight size={15} />
+            <span>{tr("support_company")}</span>
           </div>
         </div>
-        <small>{tr("transparent_processes_secure_communication")}</small>
+        <div className="login-story-footer">
+          <img
+            src="/assets/images/svg/welcom-card.svg"
+            alt="Tixia Theme"
+            className="login-illustration"
+          />
+          <small>{tr("transparent_processes_secure_communication")}</small>
+        </div>
       </div>
       <div className="login-form">
         <div className="login-controls">
           <ThemeToggle />
           <LanguagePicker />
+        </div>
+        <div className="auth-tab-bar" role="tablist" aria-label={tr("sign_in")}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "login"}
+            className={`auth-tab ${mode === "login" ? "active" : ""}`}
+            onClick={() => setMode("login")}
+          >
+            {tr("sign_in")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "signup"}
+            className={`auth-tab ${mode === "signup" ? "active" : ""}`}
+            onClick={() => setMode("signup")}
+          >
+            {tr("create_free_workspace")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "join"}
+            className={`auth-tab ${mode === "join" ? "active" : ""}`}
+            onClick={() => setMode("join")}
+          >
+            {tr("join_with_invite_code")}
+          </button>
         </div>
         <div className="eyebrow">{tr("support_center")}</div>
         <h1>
