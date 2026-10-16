@@ -3,8 +3,9 @@ import { Module } from "@nestjs/common";
 import { TicketsService } from "./tickets.service.js";
 import { TicketsController } from "./tickets.controller.js";
 import { AiModule } from "../ai/ai.module.js";
+import { AutomationsModule } from "../automations/automations.module.js";
 @Module({
-  imports: [AiModule],
+  imports: [AiModule, AutomationsModule],
   controllers: [TicketsController],
   providers: [TicketsService, AttachmentStorage],
 })

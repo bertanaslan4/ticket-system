@@ -14,6 +14,7 @@ import {
   BookOpen,
   Kanban,
   Radio,
+  Zap,
 } from "lucide-react";
 
 import { tr, locale } from "../i18n/index.js";
@@ -80,6 +81,7 @@ export default function AppLayout() {
               ["audit", tr("admin_activity"), ShieldCheck],
               ["storage", tr("cloud_settings"), Cloud],
               ["integrations", "Entegrasyonlar", Radio],
+              ["automations", tr("automations"), Zap],
             ].map(([key, label, Icon]: any) => (
               <button
                 key={key}

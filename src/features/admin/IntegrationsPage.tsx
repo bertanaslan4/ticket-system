@@ -412,6 +412,25 @@ export default function IntegrationsPage() {
         >
           <Sparkles size={18} /> AI Copilot & Triyaj
         </button>
+
+        <a
+          href="/admin/automations"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 18px",
+            borderRadius: 8,
+            textDecoration: "none",
+            background: "transparent",
+            color: "var(--text-secondary)",
+            fontWeight: 600,
+            cursor: "pointer",
+            marginLeft: "auto",
+          }}
+        >
+          <Zap size={18} color="#eab308" /> Otomasyon & Kural Motoru ➔
+        </a>
       </div>
 
       {/* Tab 1: SMTP Settings */}

@@ -18,6 +18,7 @@ import { TasksModule } from './tasks/tasks.module.js';
 import { IntegrationsModule } from './integrations/integrations.module.js';
 import { WidgetModule } from './widget/widget.module.js';
 import { AiModule } from './ai/ai.module.js';
+import { AutomationsModule } from './automations/automations.module.js';
 @Module({})
 export class AppModule {
   static register(db: any): DynamicModule {
@@ -39,6 +40,7 @@ export class AppModule {
         IntegrationsModule,
         WidgetModule,
         AiModule,
+        AutomationsModule,
         UsersModule,
         ReportsModule,
         AuditModule,

@@ -7,6 +7,7 @@ import { fail, text, choice, userSql, enrichTicketSla, applyTicketSlaTargets } f
 import { translate } from "../../shared/i18n.js";
 import { customerContactRole, isCustomerContact, adjacentSupportCompanies, previousSupportCompany } from '../../shared/support-flow.js';
 import { AiService } from "../ai/ai.service.js";
+import { AutomationsService } from "../automations/automations.service.js";
 function access(u, t) {
   if ((t.tenant_id || 1) !== (u.tenant_id || 1)) return false;
   if (u.role === "super_admin") return true;
@@ -59,6 +60,7 @@ export class TicketsService {
     private readonly mail: MailService,
     @Optional() private readonly integrations?: IntegrationsService,
     @Optional() private readonly aiService?: AiService,
+    @Optional() private readonly automations?: AutomationsService,
   ) {}
   async withFiles(files: any[], work: (items: any[]) => Promise<any>) {
     const items = await this.storage.save(files);
@@ -341,6 +343,11 @@ export class TicketsService {
       return enrichTicketSla(t);
     });
     this.integrations?.dispatchTicketNotification(ticket.tenant_id || 1, "ticket.created", ticket);
+    if (this.automations) {
+      try {
+        await this.automations.evaluateAndExecute("ticket.created", { ticket, user: u });
+      } catch {}
+    }
     return ticket;
   }
   async action(
@@ -572,6 +579,26 @@ export class TicketsService {
     });
     if (b.action === "close") {
       this.integrations?.dispatchTicketNotification(u.tenant_id || 1, "ticket.closed", { id });
+    }
+    if (this.automations) {
+      try {
+        const updatedTicket = (
+          await this.database.query("SELECT * FROM tickets WHERE id=$1", [id])
+        ).rows[0];
+        if (updatedTicket) {
+          if (b.action === "close") {
+            await this.automations.evaluateAndExecute("ticket.status_changed", {
+              ticket: updatedTicket,
+              user: u,
+            });
+          } else if (b.action === "assign") {
+            await this.automations.evaluateAndExecute("ticket.assigned", {
+              ticket: updatedTicket,
+              user: u,
+            });
+          }
+        }
+      } catch {}
     }
     return { ok: true };
   }

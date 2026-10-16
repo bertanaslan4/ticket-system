@@ -375,6 +375,33 @@ ALTER TABLE tickets ADD COLUMN IF NOT EXISTS ai_sentiment TEXT DEFAULT 'neutral'
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS ai_summary TEXT DEFAULT '';
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS ai_tags TEXT DEFAULT '';
 
+-- Phase 12: Automation & Workflow Rules Engine
+CREATE TABLE IF NOT EXISTS automation_rules (
+  id SERIAL PRIMARY KEY,
+  tenant_id INTEGER NOT NULL DEFAULT 1 REFERENCES tenants(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  trigger_event TEXT NOT NULL,
+  conditions JSONB NOT NULL DEFAULT '[]',
+  actions JSONB NOT NULL DEFAULT '[]',
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  execution_count INTEGER NOT NULL DEFAULT 0,
+  last_executed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS automation_rules_tenant_trigger_idx ON automation_rules(tenant_id, trigger_event, is_active);
 
-
-
+CREATE TABLE IF NOT EXISTS automation_logs (
+  id SERIAL PRIMARY KEY,
+  tenant_id INTEGER NOT NULL DEFAULT 1 REFERENCES tenants(id) ON DELETE CASCADE,
+  rule_id INTEGER REFERENCES automation_rules(id) ON DELETE SET NULL,
+  rule_name TEXT NOT NULL,
+  ticket_id INTEGER REFERENCES tickets(id) ON DELETE CASCADE,
+  trigger_event TEXT NOT NULL,
+  actions_taken JSONB NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'success',
+  error_message TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS automation_logs_tenant_idx ON automation_logs(tenant_id, id DESC);

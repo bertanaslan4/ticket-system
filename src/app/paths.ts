@@ -15,6 +15,7 @@ export const paths: Record<string, string> = {
   kb: "/kb",
   tasks: "/tasks",
   integrations: "/admin/integrations",
+  automations: "/admin/automations",
 };
 export function viewForPath(path: string) {
   return (
