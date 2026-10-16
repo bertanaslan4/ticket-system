@@ -565,6 +565,20 @@ storage_destination_locked:"Changing account or bucket requires migration to pre
   verification_sent: "Verification email sent.",
   rotate_invite_code: "Rotate Invite Code",
   rotate_invite_code_hint: "After rotating, the old code stops working; existing customer accounts are not affected.",
+  manage_subscription_portal: "Manage Subscription & Invoices (Stripe Portal)",
+  stripe_checkout: "Subscribe Securely with Stripe",
+  subscribe_with_stripe: "Subscribe with Stripe",
+  restore_purchases: "Restore Purchases",
+  restoring_purchases: "Restoring...",
+  restore_purchases_success: "Your purchases were restored and updated successfully.",
+  no_active_stripe_customer: "No active Stripe customer found for this workspace.",
+  cancel_at_period_end_warning: "Your subscription is scheduled to cancel at the end of the billing period.",
+  stripe_billing_title: "Web & Enterprise Billing (Stripe)",
+  stripe_billing_intro: "Automatic monthly renewal and billing management via credit card.",
+  redirecting_to_stripe: "Redirecting to Stripe checkout...",
+  redirecting_to_portal: "Redirecting to Stripe customer portal...",
+  payment_successful: "Payment completed successfully!",
+  payment_cancelled: "Payment was cancelled or not completed.",
 };
 
 

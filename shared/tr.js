@@ -564,6 +564,20 @@ export default {
   verification_sent: "Doğrulama e-postası gönderildi.",
   rotate_invite_code: "Davet Kodunu Yenile",
   rotate_invite_code_hint: "Kodu yenilediğinizde eski kod artık çalışmaz; mevcut müşteri hesapları etkilenmez.",
+  manage_subscription_portal: "Aboneliği & Faturaları Yönet (Stripe Portal)",
+  stripe_checkout: "Stripe ile Güvenli Abone Ol",
+  subscribe_with_stripe: "Stripe ile Abone Ol",
+  restore_purchases: "Satın Alımları Geri Yükle",
+  restoring_purchases: "Geri yükleniyor...",
+  restore_purchases_success: "Satın alımlarınız başarıyla geri yüklendi ve güncellendi.",
+  no_active_stripe_customer: "Bu çalışma alanına ait aktif bir Stripe müşteri kaydı bulunamadı.",
+  cancel_at_period_end_warning: "Aboneliğiniz dönem sonunda sonlandırılmak üzere ayarlanmıştır.",
+  stripe_billing_title: "Web & Kurumsal Faturalandırma (Stripe)",
+  stripe_billing_intro: "Kredi kartı ile aylık otomatik yenilenen abonelik ve güvenli ödeme yönetimi.",
+  redirecting_to_stripe: "Stripe ödeme sayfasına yönlendiriliyorsunuz...",
+  redirecting_to_portal: "Stripe müşteri portalına yönlendiriliyorsunuz...",
+  payment_successful: "Ödeme işlemi başarıyla tamamlandı!",
+  payment_cancelled: "Ödeme işlemi iptal edildi veya tamamlanmadı.",
 };
 
 

@@ -19,6 +19,7 @@ import { hashPassword, newToken, tokenHash } from "../auth.js";
 import { MailService } from "../mail/mail.service.js";
 import { issueAuthToken } from "../common/auth-tokens.js";
 import { uniqueInviteCode } from "../common/invite-code.js";
+import { StripeService } from "./stripe.service.js";
 
 const INDUSTRY_TEMPLATES = [
   "general",
@@ -435,6 +436,12 @@ export class BillingService {
       store_provider: tenant.store_provider,
       store_product_id: tenant.store_product_id,
       subscription_expires_at: tenant.subscription_expires_at,
+      stripe_customer_id:
+        user.role === "super_admin" ? tenant.stripe_customer_id : undefined,
+      stripe_subscription_id:
+        user.role === "super_admin" ? tenant.stripe_subscription_id : undefined,
+      cancel_at_period_end: Boolean(tenant.cancel_at_period_end),
+      has_stripe_subscription: Boolean(tenant.stripe_subscription_id),
     };
 
     return {
@@ -711,7 +718,10 @@ export class BillingService {
 
 @Controller()
 export class BillingController {
-  constructor(private readonly service: BillingService) {}
+  constructor(
+    private readonly service: BillingService,
+    private readonly stripeService: StripeService,
+  ) {}
 
   @Public()
   @Post("public/signup")
@@ -764,6 +774,29 @@ export class BillingController {
     return this.service.purchase(body || {}, req.user);
   }
 
+  @Post("billing/stripe/checkout")
+  @HttpCode(200)
+  stripeCheckout(@Body() body: any, @Req() req: any) {
+    return this.stripeService.createCheckoutSession(req.user, body || {});
+  }
+
+  @Post("billing/stripe/portal")
+  @HttpCode(200)
+  stripePortal(@Body() body: any, @Req() req: any) {
+    return this.stripeService.createPortalSession(req.user, body || {});
+  }
+
+  @Public()
+  @Post("webhooks/stripe")
+  @HttpCode(200)
+  stripeWebhook(
+    @Headers("stripe-signature") sig: string | undefined,
+    @Req() req: any,
+    @Body() body: any,
+  ) {
+    return this.stripeService.handleWebhook(sig, req.rawBody, body || {});
+  }
+
   @Public()
   @Post("webhooks/revenuecat")
   @HttpCode(200)
@@ -777,6 +810,7 @@ export class BillingController {
 
 @Module({
   controllers: [BillingController],
-  providers: [BillingService],
+  providers: [BillingService, StripeService],
+  exports: [BillingService, StripeService],
 })
 export class BillingModule {}

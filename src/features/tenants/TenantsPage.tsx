@@ -43,6 +43,10 @@ export default function TenantsPage() {
   const client = useQueryClient();
   const [editing, setEditing] = useState<TenantFormState | null>(null);
   const [purchaseNotice, setPurchaseNotice] = useState(false);
+  const stripeStatus =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("stripe_status")
+      : null;
 
   const query = useQuery({
     queryKey: ["admin", "tenants"],
@@ -70,6 +74,29 @@ export default function TenantsPage() {
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: ["billing"] });
       await refresh();
+    },
+  });
+
+  const stripeCheckoutMutation = useMutation({
+    mutationFn: (product_id: string) =>
+      api<{ ok: boolean; session_id: string; url: string }>(
+        "/billing/stripe/checkout",
+        { product_id },
+      ),
+    onSuccess: (data) => {
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    },
+  });
+
+  const stripePortalMutation = useMutation({
+    mutationFn: () =>
+      api<{ ok: boolean; url: string }>("/billing/stripe/portal", {}),
+    onSuccess: (data) => {
+      if (data?.url) {
+        window.location.href = data.url;
+      }
     },
   });
 
@@ -166,12 +193,47 @@ export default function TenantsPage() {
                 >
                   {tr("rotate_invite_code")}
                 </button>
+                {catalogQuery.data.tenant?.has_stripe_subscription && (
+                  <button
+                    type="button"
+                    className="secondary"
+                    style={{ marginLeft: 8 }}
+                    disabled={stripePortalMutation.isPending}
+                    onClick={() => stripePortalMutation.mutate()}
+                  >
+                    {stripePortalMutation.isPending
+                      ? tr("redirecting_to_portal")
+                      : tr("manage_subscription_portal")}
+                  </button>
+                )}
               </div>
             </div>
           </div>
           <p className="hint" style={{ marginBottom: 14 }}>
             {tr("customer_invite_code_hint")}
           </p>
+
+          {stripeStatus === "success" && (
+            <div
+              className="badge closed"
+              style={{ marginBottom: 12, display: "block" }}
+            >
+              {tr("payment_successful")}
+            </div>
+          )}
+          {stripeStatus === "cancelled" && (
+            <div className="error" role="alert" style={{ marginBottom: 12 }}>
+              {tr("payment_cancelled")}
+            </div>
+          )}
+          {catalogQuery.data.tenant?.cancel_at_period_end && (
+            <div
+              className="badge open"
+              style={{ marginBottom: 12, display: "block" }}
+            >
+              {tr("cancel_at_period_end_warning")}
+            </div>
+          )}
 
           <div
             style={{
@@ -216,9 +278,17 @@ export default function TenantsPage() {
             </div>
           </div>
 
-          {(purchaseMutation.error || rotateMutation.error) && (
+          {(purchaseMutation.error ||
+            rotateMutation.error ||
+            stripeCheckoutMutation.error ||
+            stripePortalMutation.error) && (
             <div className="error" role="alert">
-              {tr(purchaseMutation.error || rotateMutation.error)}
+              {tr(
+                purchaseMutation.error ||
+                  rotateMutation.error ||
+                  stripeCheckoutMutation.error ||
+                  stripePortalMutation.error,
+              )}
             </div>
           )}
 
@@ -252,17 +322,39 @@ export default function TenantsPage() {
                         {plan.price_try} TL {tr("per_month")}
                       </strong>
                     </div>
-                    <small className="muted" style={{ display: "block", marginBottom: 10 }}>
-                      {plan.agent_limit} Agent · {(plan.storage_limit_mb / 1024).toFixed(0)} GB
+                    <small
+                      className="muted"
+                      style={{ display: "block", marginBottom: 10 }}
+                    >
+                      {plan.agent_limit} Agent ·{" "}
+                      {(plan.storage_limit_mb / 1024).toFixed(0)} GB
                     </small>
                     <button
                       type="button"
                       className={isCurrent ? "secondary" : "primary"}
-                      disabled={isCurrent || purchaseMutation.isPending}
-                      onClick={() => purchaseMutation.mutate(plan.product_id)}
+                      style={{ width: "100%", marginBottom: 6 }}
+                      disabled={isCurrent || stripeCheckoutMutation.isPending}
+                      onClick={() =>
+                        stripeCheckoutMutation.mutate(plan.product_id)
+                      }
                     >
-                      {isCurrent ? tr("current_plan") : tr("upgrade_now")}
+                      {stripeCheckoutMutation.isPending
+                        ? tr("redirecting_to_stripe")
+                        : isCurrent
+                          ? tr("current_plan")
+                          : tr("stripe_checkout")}
                     </button>
+                    {!isCurrent && (
+                      <button
+                        type="button"
+                        className="secondary"
+                        style={{ width: "100%", fontSize: 12 }}
+                        disabled={purchaseMutation.isPending}
+                        onClick={() => purchaseMutation.mutate(plan.product_id)}
+                      >
+                        {tr("upgrade_now")}
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -280,7 +372,21 @@ export default function TenantsPage() {
                 </div>
                 <button
                   type="button"
+                  className="primary"
+                  style={{ width: "100%", marginBottom: 6 }}
+                  disabled={stripeCheckoutMutation.isPending}
+                  onClick={() =>
+                    stripeCheckoutMutation.mutate(addon.product_id)
+                  }
+                >
+                  {stripeCheckoutMutation.isPending
+                    ? tr("redirecting_to_stripe")
+                    : tr("stripe_checkout")}
+                </button>
+                <button
+                  type="button"
                   className="secondary"
+                  style={{ width: "100%", fontSize: 12 }}
                   disabled={purchaseMutation.isPending}
                   onClick={() => purchaseMutation.mutate(addon.product_id)}
                 >

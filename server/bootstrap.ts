@@ -50,6 +50,7 @@ export async function createApp(db: any, { frontend = false } = {}) {
         : json(body);
     if (
       !["GET", "HEAD", "OPTIONS"].includes(req.method) &&
+      !req.path.startsWith("/webhooks") &&
       req.headers.origin &&
       req.headers.origin !== (process.env.APP_ORIGIN || "http://localhost:3000")
     )
@@ -57,7 +58,12 @@ export async function createApp(db: any, { frontend = false } = {}) {
     next();
   });
   app.use('/api/admin/storage', rateLimit({windowMs:60000,limit:20,standardHeaders:'draft-8',legacyHeaders:false,message:{error:'storage_rate_limit'}}));
-  const parseJson = express.json({ limit: "64kb" });
+  const parseJson = express.json({
+    limit: "64kb",
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf;
+    },
+  });
   app.use((req, res, next) => parseJson(req, res, (error) => {
     if (!error) return next();
     if (error.type === 'entity.parse.failed') return res.status(400).json({error:'invalid_json_data'});

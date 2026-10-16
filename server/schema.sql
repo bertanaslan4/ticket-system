@@ -273,3 +273,10 @@ CREATE INDEX IF NOT EXISTS auth_mail_outbox_pending_idx ON auth_mail_outbox(stat
 
 -- Store webhook events are applied in timestamp order so a replayed old event cannot undo a newer one.
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS store_event_at TIMESTAMPTZ;
+
+-- Phase 6: Stripe billing, Customer Portal, and Subscription Lifecycle
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS cancel_at_period_end BOOLEAN NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS tenants_stripe_customer_idx ON tenants(stripe_customer_id);
+CREATE INDEX IF NOT EXISTS tenants_stripe_subscription_idx ON tenants(stripe_subscription_id);

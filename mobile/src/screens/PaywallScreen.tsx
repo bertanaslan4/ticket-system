@@ -10,6 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { mobileApi } from "../api/client";
+import { PurchasesService } from "../services/purchases";
 
 export default function PaywallScreen({
   onBack,
@@ -21,12 +22,16 @@ export default function PaywallScreen({
   const [catalog, setCatalog] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [buyingProduct, setBuyingProduct] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
       const data = await mobileApi.getBillingCatalog();
       setCatalog(data);
+      if (data?.tenant?.id) {
+        PurchasesService.configure(`tenant_${data.tenant.id}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -36,11 +41,36 @@ export default function PaywallScreen({
     load();
   }, []);
 
+  const handleRestore = async () => {
+    setRestoring(true);
+    try {
+      const res = await PurchasesService.restorePurchases();
+      if (res.ok) {
+        await load();
+        onPurchased();
+        Alert.alert(
+          "Satın Alımlar Geri Yüklendi",
+          "Mevcut paket ve abonelik haklarınız başarıyla güncellendi.",
+        );
+      } else {
+        Alert.alert(
+          "Geri Yükleme",
+          res.error || "Geri yüklenecek aktif bir abonelik bulunamadı.",
+        );
+      }
+    } catch (err: any) {
+      Alert.alert("Hata", err.message || "Geri yükleme işlemi başarısız oldu.");
+    } finally {
+      setRestoring(false);
+    }
+  };
+
   const handlePurchase = async (productId: string) => {
     setBuyingProduct(productId);
     try {
       const store = Platform.OS === "android" ? "play_store" : "app_store";
-      await mobileApi.purchaseIap(productId, store);
+      const res = await PurchasesService.purchaseProduct(productId, store);
+      if (!res.ok) throw new Error(res.error);
       await load();
       onPurchased();
       Alert.alert(
@@ -183,6 +213,20 @@ export default function PaywallScreen({
             </TouchableOpacity>
           </View>
         ))}
+
+        <View style={{ marginTop: 14, marginBottom: 28, alignItems: "center" }}>
+          <TouchableOpacity
+            style={styles.restoreBtn}
+            disabled={restoring || buyingProduct !== null}
+            onPress={handleRestore}
+          >
+            <Text style={styles.restoreBtnText}>
+              {restoring
+                ? "Geri Yükleniyor..."
+                : "Satın Alımları Geri Yükle (Restore Purchases)"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -317,5 +361,15 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 14,
     fontWeight: "700",
+  },
+  restoreBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  restoreBtnText: {
+    color: "#94a3b8",
+    fontSize: 13,
+    fontWeight: "600",
+    textDecorationLine: "underline",
   },
 });
