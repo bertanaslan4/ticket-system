@@ -14,7 +14,8 @@ export interface User {
   tenant_id?: number;
   tenant_name?: string;
   tenant_slug?: string;
-  invite_code?: string;
+  invite_code?: string | null;
+  email_verified?: boolean;
   industry_template?: string;
   plan_tier?: "free" | "starter" | "pro" | "enterprise";
   tenant_status?: "trial" | "active" | "past_due" | "suspended";

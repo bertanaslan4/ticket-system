@@ -69,6 +69,7 @@ export class MailService implements OnModuleInit, OnModuleDestroy {
   tick() {
     if (!this.running)
       this.running = this.processBatch()
+        .then(() => this.processAuthBatch())
         .catch(() => {
           console.error("Mail queue processing failed");
         })
@@ -76,6 +77,98 @@ export class MailService implements OnModuleInit, OnModuleDestroy {
           this.running = undefined;
         });
     return this.running;
+  }
+  authTemplate(kind: string) {
+    return kind === "password_reset"
+      ? process.env.MAIL_TEMPLATE_PASSWORD_RESET
+      : process.env.MAIL_TEMPLATE_VERIFY_EMAIL;
+  }
+  /**
+   * Queues a verification / password-reset email. The raw link is only kept until the
+   * mail is delivered; the token itself is stored hashed in auth_tokens.
+   */
+  async enqueueAuthMail(
+    tx: any,
+    user: { id: number; name: string; email: string },
+    kind: "password_reset" | "email_verify",
+    link: string,
+  ) {
+    const demo = /@[^@]+\.(?:demo|local|test|invalid|example)$/i.test(
+      user.email,
+    );
+    const resetting = kind === "password_reset";
+    const payload = {
+      title: resetting
+        ? "Şifre sıfırlama bağlantınız"
+        : "E-posta adresinizi doğrulayın",
+      source: process.env.MAIL_API_SOURCE || "ushops",
+      lang: "tr",
+      reply_to: process.env.MAIL_API_REPLY_TO || "destek@bekatos.com",
+      to: [user.email],
+      data: {
+        notification_type: kind,
+        recipient_name: user.name,
+        link,
+        expires_in: resetting ? "1 saat" : "24 saat",
+      },
+    };
+    await tx.query(
+      "INSERT INTO auth_mail_outbox(user_id,kind,payload,status,last_error) VALUES($1,$2,$3,$4,$5)",
+      [
+        user.id,
+        kind,
+        JSON.stringify(payload),
+        demo ? "skipped" : "pending",
+        demo ? "demo_address" : null,
+      ],
+    );
+  }
+  async processAuthBatch() {
+    if (!this.enabled()) return;
+    for (let i = 0; i < 10; i++) {
+      const job = await this.db.transaction(async (tx) => {
+        const row = (
+          await tx.query(
+            "SELECT * FROM auth_mail_outbox WHERE (status='pending' AND next_attempt_at<=now()) OR (status='sending' AND locked_at<now()-interval '5 minutes') ORDER BY id LIMIT 1 FOR UPDATE SKIP LOCKED",
+          )
+        ).rows[0];
+        if (!row) return null;
+        await tx.query(
+          "UPDATE auth_mail_outbox SET status='sending',attempts=attempts+1,locked_at=now() WHERE id=$1",
+          [row.id],
+        );
+        return { ...row, attempts: row.attempts + 1 };
+      });
+      if (!job) return;
+      const template = this.authTemplate(job.kind);
+      if (!template) {
+        await this.db.query(
+          "UPDATE auth_mail_outbox SET status='skipped',last_error='template_not_configured' WHERE id=$1",
+          [job.id],
+        );
+        continue;
+      }
+      try {
+        await this.send({ ...job.payload, template }, `auth-${job.id}`);
+        await this.db.query(
+          "UPDATE auth_mail_outbox SET status='sent',sent_at=now(),last_error=NULL,payload=jsonb_set(payload,'{data,link}','\"[redacted]\"') WHERE id=$1",
+          [job.id],
+        );
+      } catch (error: any) {
+        const reason = /^HTTP_\d{3}$/.test(error.message)
+          ? error.message
+          : "delivery_failed";
+        await this.db.query(
+          "UPDATE auth_mail_outbox SET status=$2,last_error=$3,next_attempt_at=now()+($4 * interval '1 second') WHERE id=$1",
+          [
+            job.id,
+            job.attempts >= 5 ? "failed" : "pending",
+            reason,
+            Math.min(3600, 60 * 2 ** (job.attempts - 1)),
+          ],
+        );
+      }
+    }
   }
   async enqueue(
     tx: any,
@@ -160,7 +253,7 @@ export class MailService implements OnModuleInit, OnModuleDestroy {
       );
     }
   }
-  async send(payload: any, id: number) {
+  async send(payload: any, id: number | string) {
     const url = new URL(process.env.MAIL_API_URL!);
     if (url.protocol !== "https:") throw Error("configuration");
     const timestamp = String(Math.floor(Date.now() / 1000));

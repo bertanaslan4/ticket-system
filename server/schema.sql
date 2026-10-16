@@ -220,7 +220,10 @@ ALTER TABLE tenants ADD COLUMN IF NOT EXISTS store_provider TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS store_product_id TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMPTZ;
 
-UPDATE tenants SET invite_code = 'BKT-' || lpad(id::text, 4, '0') WHERE invite_code IS NULL;
+-- Phase 5: invite codes must not be guessable. Legacy sequential codes (BKT-0001) are replaced once;
+-- new codes are 6 random characters so they never match the legacy 4-digit pattern again.
+UPDATE tenants SET invite_code = 'BKT-' || upper(substr(md5(random()::text || id::text || clock_timestamp()::text), 1, 6))
+ WHERE invite_code IS NULL OR invite_code ~ '^BKT-[0-9]{4}$';
 
 CREATE TABLE IF NOT EXISTS iap_transactions (
  id SERIAL PRIMARY KEY,
@@ -237,3 +240,36 @@ CREATE TABLE IF NOT EXISTS iap_transactions (
 CREATE INDEX IF NOT EXISTS iap_transactions_tenant_idx ON iap_transactions(tenant_id, id DESC);
 
 
+
+-- Phase 5: Security and revenue correctness.
+-- Existing and admin-created users are verified by default; self-service signup/join inserts NULL explicitly.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ DEFAULT now();
+
+CREATE TABLE IF NOT EXISTS auth_tokens (
+ id SERIAL PRIMARY KEY,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ kind TEXT NOT NULL CHECK(kind IN ('password_reset','email_verify')),
+ token_hash TEXT NOT NULL UNIQUE,
+ expires_at TIMESTAMPTZ NOT NULL,
+ used_at TIMESTAMPTZ,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS auth_tokens_user_idx ON auth_tokens(user_id, kind);
+
+CREATE TABLE IF NOT EXISTS auth_mail_outbox (
+ id SERIAL PRIMARY KEY,
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ kind TEXT NOT NULL CHECK(kind IN ('password_reset','email_verify')),
+ payload JSONB NOT NULL,
+ status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','sending','sent','failed','skipped')),
+ attempts INTEGER NOT NULL DEFAULT 0,
+ next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ locked_at TIMESTAMPTZ,
+ last_error TEXT,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ sent_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS auth_mail_outbox_pending_idx ON auth_mail_outbox(status, next_attempt_at);
+
+-- Store webhook events are applied in timestamp order so a replayed old event cannot undo a newer one.
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS store_event_at TIMESTAMPTZ;

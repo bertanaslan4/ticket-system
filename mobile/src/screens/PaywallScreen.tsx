@@ -54,6 +54,22 @@ export default function PaywallScreen({
     }
   };
 
+  const handleRotateInviteCode = async () => {
+    try {
+      const res = await mobileApi.rotateInviteCode();
+      if (res?.invite_code) {
+        setCatalog((prev: any) => ({
+          ...prev,
+          tenant: { ...prev.tenant, invite_code: res.invite_code },
+          workspace: { ...prev.workspace, invite_code: res.invite_code },
+        }));
+        Alert.alert("Başarılı", "Davet kodu yenilendi.");
+      }
+    } catch (err: any) {
+      Alert.alert("Hata", err.message || "Davet kodu yenilenemedi.");
+    }
+  };
+
   if (loading || !catalog) {
     return (
       <View style={styles.loadingBox}>
@@ -77,11 +93,19 @@ export default function PaywallScreen({
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.inviteCard}>
           <Text style={styles.inviteLabel}>MÜŞTERİ DAVET KODUNUZ</Text>
-          <Text style={styles.inviteCode}>{tenant.invite_code || "BKT-0001"}</Text>
+          <Text style={styles.inviteCode}>{tenant.invite_code || "—"}</Text>
           <Text style={styles.inviteHint}>
             Müşterileriniz mobil uygulamayı indirip bu kodu girerek sözleşmesiz
             şekilde doğrudan çalışma alanınıza katılabilir.
           </Text>
+          {tenant.invite_code && (
+            <TouchableOpacity
+              style={[styles.addonBtn, { marginTop: 10, paddingHorizontal: 16 }]}
+              onPress={handleRotateInviteCode}
+            >
+              <Text style={styles.buyBtnText}>Kodu Yenile (Rotate)</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.usageCard}>

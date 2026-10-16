@@ -6,11 +6,24 @@ import { tr } from "../../i18n/index.js";
 import LanguagePicker from "../../components/LanguagePicker";
 import ThemeToggle from "../../components/ThemeToggle";
 
-export default function Login({ onLogin, onSignup, onJoin, error, busy }: any) {
+export default function Login({
+  onLogin,
+  onSignup,
+  onJoin,
+  onForgot,
+  onReset,
+  resetToken,
+  notice,
+  error,
+  busy,
+}: any) {
   useLanguage();
-  const [mode, setMode] = useState<"login" | "signup" | "join">("login");
+  const [mode, setMode] = useState<
+    "login" | "signup" | "join" | "forgot" | "reset"
+  >(resetToken ? "reset" : "login");
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
+    [confirmPassword, setConfirmPassword] = useState(""),
     [name, setName] = useState(""),
     [companyName, setCompanyName] = useState(""),
     [industryTemplate, setIndustryTemplate] = useState("it_software"),
@@ -59,9 +72,18 @@ export default function Login({ onLogin, onSignup, onJoin, error, busy }: any) {
             ? tr("create_free_workspace")
             : mode === "join"
               ? tr("join_with_invite_code")
-              : tr("welcome_back")}
+              : mode === "forgot"
+                ? tr("forgot_password")
+                : mode === "reset"
+                  ? tr("set_new_password")
+                  : tr("welcome_back")}
         </h1>
         <p>{tr("sign_in_to_access_your_workspace")}</p>
+        {notice && (
+          <div role="status" className="notice">
+            {notice}
+          </div>
+        )}
 
         {mode === "login" && (
           <form
@@ -99,6 +121,93 @@ export default function Login({ onLogin, onSignup, onJoin, error, busy }: any) {
             )}
             <button disabled={busy} className="primary">
               {busy ? tr("signing_in") : tr("sign_in")}
+              <ArrowRight size={18} />
+            </button>
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => setMode("forgot")}
+            >
+              {tr("forgot_password")}
+            </button>
+          </form>
+        )}
+
+        {mode === "forgot" && (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              await onForgot?.({ email });
+            }}
+          >
+            <label>
+              {tr("email_address")}
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={tr("name_company_com")}
+                autoComplete="username"
+              />
+            </label>
+            {error && (
+              <div role="alert" className="error">
+                {tr(error)}
+              </div>
+            )}
+            <button disabled={busy} className="primary">
+              {busy ? tr("sending") : tr("send_reset_link")}
+              <ArrowRight size={18} />
+            </button>
+          </form>
+        )}
+
+        {mode === "reset" && (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const ok = await onReset?.({
+                token: resetToken,
+                newPassword: password,
+                confirmPassword,
+              });
+              if (ok) {
+                setPassword("");
+                setConfirmPassword("");
+                setMode("login");
+              }
+            }}
+          >
+            <label>
+              {tr("new_password")}
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </label>
+            <label>
+              {tr("confirm_new_password")}
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </label>
+            {error && (
+              <div role="alert" className="error">
+                {tr(error)}
+              </div>
+            )}
+            <button disabled={busy} className="primary">
+              {busy ? tr("updating") : tr("update_password")}
               <ArrowRight size={18} />
             </button>
           </form>
@@ -256,7 +365,9 @@ export default function Login({ onLogin, onSignup, onJoin, error, busy }: any) {
               className="secondary"
               onClick={() => setMode("login")}
             >
-              {tr("sign_in")}
+              {mode === "forgot" || mode === "reset"
+                ? tr("back_to_sign_in")
+                : tr("sign_in")}
             </button>
           )}
           {mode !== "signup" && (

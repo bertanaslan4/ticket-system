@@ -65,6 +65,14 @@ export default function TenantsPage() {
     },
   });
 
+  const rotateMutation = useMutation({
+    mutationFn: () => api("/billing/invite-code/rotate", {}),
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ["billing"] });
+      await refresh();
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: (body: TenantFormState) =>
       api("/admin/tenants" + (body.id ? "/" + body.id : ""), body),
@@ -141,16 +149,25 @@ export default function TenantsPage() {
               <h2>{tr("self_service_billing")}</h2>
               <p className="muted">{tr("self_service_billing_intro")}</p>
             </div>
-            {catalogQuery.data.tenant?.invite_code && (
-              <div style={{ textAlign: "right" }}>
-                <small className="muted">{tr("customer_invite_code")}</small>
-                <div>
+            <div style={{ textAlign: "right" }}>
+              <small className="muted">{tr("customer_invite_code")}</small>
+              <div>
+                {catalogQuery.data.tenant?.invite_code && (
                   <span className="badge open" style={{ fontSize: 15 }}>
                     {catalogQuery.data.tenant.invite_code}
                   </span>
-                </div>
+                )}{" "}
+                <button
+                  type="button"
+                  className="secondary"
+                  title={tr("rotate_invite_code_hint")}
+                  disabled={rotateMutation.isPending}
+                  onClick={() => rotateMutation.mutate()}
+                >
+                  {tr("rotate_invite_code")}
+                </button>
               </div>
-            )}
+            </div>
           </div>
           <p className="hint" style={{ marginBottom: 14 }}>
             {tr("customer_invite_code_hint")}
@@ -198,6 +215,12 @@ export default function TenantsPage() {
               </div>
             </div>
           </div>
+
+          {(purchaseMutation.error || rotateMutation.error) && (
+            <div className="error" role="alert">
+              {tr(purchaseMutation.error || rotateMutation.error)}
+            </div>
+          )}
 
           {purchaseNotice && (
             <div className="badge closed" style={{ marginBottom: 12 }}>

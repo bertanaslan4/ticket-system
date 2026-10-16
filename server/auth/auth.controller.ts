@@ -43,6 +43,29 @@ export class AuthController {
   @Get("me") me(@Req() req: any) {
     return this.auth.me(req.user);
   }
+  @Public()
+  @Post("public/forgot-password")
+  @HttpCode(200)
+  forgotPassword(@Body() body: any) {
+    return this.auth.forgotPassword(body || {});
+  }
+  @Public()
+  @Post("public/reset-password")
+  @HttpCode(200)
+  resetPassword(@Body() body: any) {
+    return this.auth.resetPassword(body || {});
+  }
+  @Public()
+  @Post("public/verify-email")
+  @HttpCode(200)
+  verifyEmail(@Body() body: any) {
+    return this.auth.verifyEmail(body || {});
+  }
+  @Post("me/verify-email/resend")
+  @HttpCode(200)
+  resendVerification(@Req() req: any) {
+    return this.auth.resendVerification(req.user);
+  }
   @Post("me/password")
   @HttpCode(200)
   changePassword(@Req() req: any, @Body() body: any) {

@@ -195,6 +195,27 @@ export const mobileApi = {
     return mobileRequest<any>("/billing/catalog");
   },
 
+  rotateInviteCode() {
+    return mobileRequest<{ ok: boolean; invite_code: string }>(
+      "/billing/invite-code/rotate",
+      { method: "POST", body: {} },
+    );
+  },
+
+  forgotPassword(email: string) {
+    return mobileRequest<{ ok: boolean }>("/public/forgot-password", {
+      method: "POST",
+      body: { email },
+    });
+  },
+
+  resendVerification() {
+    return mobileRequest<{ ok: boolean }>("/me/verify-email/resend", {
+      method: "POST",
+      body: {},
+    });
+  },
+
   purchaseIap(
     product_id: string,
     store: "app_store" | "play_store" | "stripe" = "app_store",

@@ -186,6 +186,31 @@ export default function LoginScreen({
           onChangeText={setPassword}
         />
 
+        {mode === "login" && (
+          <TouchableOpacity
+            style={{ marginTop: 10, alignSelf: "flex-start" }}
+            onPress={async () => {
+              if (!email.trim()) {
+                setError("Lütfen e-posta adresinizi girin.");
+                return;
+              }
+              setLoading(true);
+              try {
+                await setApiBaseUrl(serverUrl);
+                await mobileApi.forgotPassword(email.trim());
+                setError(null);
+                alert("Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.");
+              } catch (err: any) {
+                setError(err.message || "İşlem başarısız.");
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            <Text style={styles.configToggleText}>Şifremi unuttum</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           onPress={() => setShowServerConfig((v) => !v)}
           style={styles.configToggle}

@@ -15,6 +15,7 @@ export const auditLabels = {
   tenant_created: "tenant_created",
   tenant_updated: "tenant_updated",
   iap_purchased: "iap_purchased",
+  invite_code_rotated: "invite_code_rotated",
   sla_updated: "sla_updated",
   mail_outbox_retried: "mail_outbox_retried",
   workspace_exported: "workspace_exported",

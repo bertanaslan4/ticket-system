@@ -16,6 +16,14 @@ export async function createApp(db: any, { frontend = false } = {}) {
     { bodyParser: false, logger: false, abortOnError: false },
   );
   app.disable("x-powered-by");
+  // Behind a reverse proxy set TRUST_PROXY (hop count, e.g. 1) so rate limits see real client IPs.
+  if (process.env.TRUST_PROXY)
+    app.set(
+      "trust proxy",
+      /^\d+$/.test(process.env.TRUST_PROXY)
+        ? Number(process.env.TRUST_PROXY)
+        : process.env.TRUST_PROXY,
+    );
   app.setGlobalPrefix("api");
   app.use(
     helmet({
@@ -66,6 +74,23 @@ export async function createApp(db: any, { frontend = false } = {}) {
       message: { error: "too_many_sign_in_attempts_please_try_again_later" },
     }),
   );
+  // Public self-service, account recovery and billing webhook endpoints are unauthenticated,
+  // so each gets its own per-IP budget (invite codes in particular must not be brute-forced).
+  const publicLimit = (windowMs: number, limit: number) =>
+    rateLimit({
+      windowMs,
+      limit,
+      standardHeaders: "draft-8",
+      legacyHeaders: false,
+      message: { error: "too_many_requests_please_try_again_later" },
+    });
+  app.use("/api/public/signup", publicLimit(60 * 60 * 1000, 10));
+  app.use("/api/public/join", publicLimit(15 * 60 * 1000, 20));
+  app.use("/api/public/forgot-password", publicLimit(15 * 60 * 1000, 5));
+  app.use("/api/public/reset-password", publicLimit(15 * 60 * 1000, 10));
+  app.use("/api/public/verify-email", publicLimit(15 * 60 * 1000, 20));
+  app.use("/api/me/verify-email/resend", publicLimit(15 * 60 * 1000, 5));
+  app.use("/api/webhooks", publicLimit(60 * 1000, 120));
   app.useGlobalFilters(new ApiExceptionFilter());
   app.use('/api/me/password', rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'password_change_rate_limit' } }));
   if (frontend) {

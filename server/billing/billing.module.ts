@@ -10,12 +10,15 @@ import {
   HttpCode,
   Injectable,
 } from "@nestjs/common";
-import { randomBytes } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { Public } from "../auth/public.decorator.js";
 import { DatabaseService } from "../database/database.service.js";
 import { str, option, email, audit } from "../common/admin-domain.js";
 import { fail, userSql } from "../common/domain.js";
 import { hashPassword, newToken, tokenHash } from "../auth.js";
+import { MailService } from "../mail/mail.service.js";
+import { issueAuthToken } from "../common/auth-tokens.js";
+import { uniqueInviteCode } from "../common/invite-code.js";
 
 const INDUSTRY_TEMPLATES = [
   "general",
@@ -117,7 +120,10 @@ function slugify(value: string) {
 
 @Injectable()
 export class BillingService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly mail: MailService,
+  ) {}
 
   async publicSignup(body: any) {
     const companyName = str(body.company_name, 2, 180);
@@ -160,7 +166,7 @@ export class BillingService {
         )
       ).rows[0];
 
-      const inviteCode = `BKT-${String(tenant.id).padStart(4, "0")}`;
+      const inviteCode = await uniqueInviteCode(tx);
       await tx.query("UPDATE tenants SET invite_code=$1 WHERE id=$2", [
         inviteCode,
         tenant.id,
@@ -209,7 +215,7 @@ export class BillingService {
 
       const createdUser = (
         await tx.query(
-          "INSERT INTO users(tenant_id, org_id, name, email, password_hash, system_role, active) VALUES($1, $2, $3, $4, $5, 'super_admin', true) RETURNING id",
+          "INSERT INTO users(tenant_id, org_id, name, email, password_hash, system_role, active, email_verified_at) VALUES($1, $2, $3, $4, $5, 'super_admin', true, NULL) RETURNING id",
           [
             tenant.id,
             contractorOrg.id,
@@ -224,6 +230,12 @@ export class BillingService {
       await tx.query(
         "INSERT INTO sessions VALUES($1, $2, now() + interval '8 hours')",
         [tokenHash(token), createdUser.id],
+      );
+      await issueAuthToken(
+        tx,
+        this.mail,
+        { id: createdUser.id, name: userName, email: userEmail },
+        "email_verify",
       );
 
       const fullUser = (
@@ -326,7 +338,7 @@ export class BillingService {
 
       const createdUser = (
         await tx.query(
-          "INSERT INTO users(tenant_id, org_id, name, email, password_hash, system_role, active) VALUES($1, $2, $3, $4, $5, 'member', true) RETURNING id",
+          "INSERT INTO users(tenant_id, org_id, name, email, password_hash, system_role, active, email_verified_at) VALUES($1, $2, $3, $4, $5, 'member', true, NULL) RETURNING id",
           [
             tenant.id,
             customerOrg.id,
@@ -342,12 +354,20 @@ export class BillingService {
         "INSERT INTO sessions VALUES($1, $2, now() + interval '8 hours')",
         [tokenHash(token), createdUser.id],
       );
+      await issueAuthToken(
+        tx,
+        this.mail,
+        { id: createdUser.id, name: userName, email: userEmail },
+        "email_verify",
+      );
 
       const fullUser = (
         await tx.query(`${userSql} WHERE u.id=$1`, [createdUser.id])
       ).rows[0];
 
-      return { token, tenant, user: { ...fullUser, used: 0 } };
+      // Joining customers never need to see the workspace's invite code or limits.
+      const { invite_code: _hidden, ...publicTenant } = tenant;
+      return { token, tenant: publicTenant, user: { ...fullUser, used: 0 } };
     });
   }
 
@@ -402,7 +422,7 @@ export class BillingService {
       name: tenant.name,
       slug: tenant.slug,
       plan_tier: tenant.plan_tier,
-      invite_code: tenant.invite_code,
+      invite_code: user.role === "super_admin" ? tenant.invite_code : undefined,
       agent_used: agentUsed,
       agent_limit: tenant.agent_limit,
       customer_org_used: customerOrgUsed,
@@ -421,13 +441,21 @@ export class BillingService {
       ...IAP_CATALOG,
       workspace,
       tenant: workspace,
-      transactions,
+      transactions: user.role === "super_admin" ? transactions : [],
     };
   }
 
   async purchase(body: any, user: any) {
     if (user.role !== "super_admin")
       fail(403, "this_area_is_restricted_to_super_admins");
+    // Client-reported purchases carry no proof of payment. In production, plans change only through
+    // the store webhook (or a verified payment provider) unless this switch is turned on explicitly.
+    if (
+      process.env.NODE_ENV === "production" &&
+      process.env.BILLING_ALLOW_CLIENT_PURCHASES !== "true"
+    )
+      fail(403, "client_purchases_disabled");
+    if (!user.email_verified) fail(403, "email_verification_required");
     const tenantId = user.tenant_id || 1;
     const store = option(body.store ?? "app_store", [
       "app_store",
@@ -457,7 +485,7 @@ export class BillingService {
         await tx.query(
           `UPDATE tenants
            SET plan_tier = $1,
-               status = 'active',
+               status = CASE WHEN status = 'suspended' THEN status ELSE 'active' END,
                agent_limit = GREATEST(agent_limit, $2),
                customer_org_limit = GREATEST(customer_org_limit, $3),
                monthly_ticket_limit = GREATEST(monthly_ticket_limit, $4),
@@ -513,8 +541,14 @@ export class BillingService {
 
   async handleRevenueCatWebhook(authHeader: string | undefined, body: any) {
     const secret = process.env.REVENUECAT_WEBHOOK_SECRET;
-    if (secret && authHeader !== `Bearer ${secret}`) {
-      fail(401, "please_sign_in");
+    // Without a secret anyone could upgrade any workspace, so production refuses to run unprotected.
+    if (!secret && process.env.NODE_ENV === "production")
+      fail(503, "webhook_not_configured");
+    if (secret) {
+      const expected = Buffer.from(`Bearer ${secret}`);
+      const given = Buffer.from(authHeader || "");
+      if (given.length !== expected.length || !timingSafeEqual(given, expected))
+        fail(401, "please_sign_in");
     }
     const ev = body?.event || body;
     if (!ev || !ev.app_user_id || !ev.type) fail(400, "invalid_json_data");
@@ -523,10 +557,42 @@ export class BillingService {
     if (!Number.isSafeInteger(tenantId) || tenantId <= 0)
       fail(400, "tenant_not_found");
 
-    const productId = String(ev.product_id || "bekatos_starter_monthly");
-    const txId = String(
-      ev.transaction_id || ev.id || `rc_${Date.now()}_${randomBytes(3).toString("hex")}`,
+    const PURCHASE_EVENTS = ["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION"];
+    const KNOWN_EVENTS = [...PURCHASE_EVENTS, "EXPIRATION", "BILLING_ISSUE"];
+    if (!KNOWN_EVENTS.includes(ev.type))
+      return { ok: true, tenant_id: tenantId, ignored: "unhandled_event" };
+
+    const productId = String(ev.product_id || "");
+    const plan = IAP_CATALOG.plans.find(
+      (p) => p.product_id === productId && p.tier !== "free",
     );
+    // An unknown product must never be mapped to a paid plan; acknowledge so the sender stops retrying.
+    if (PURCHASE_EVENTS.includes(ev.type) && !plan)
+      return { ok: true, tenant_id: tenantId, ignored: "unknown_product" };
+
+    const txId = String(
+      ev.transaction_id ||
+        ev.id ||
+        `rc_${Date.now()}_${randomBytes(3).toString("hex")}`,
+    );
+    const storeName =
+      (
+        {
+          APP_STORE: "app_store",
+          MAC_APP_STORE: "app_store",
+          PLAY_STORE: "play_store",
+          STRIPE: "stripe",
+          PROMOTIONAL: "promo",
+        } as Record<string, string>
+      )[String(ev.store || "").toUpperCase()] || "app_store";
+    const eventMs = Number(ev.event_timestamp_ms);
+    const eventAt =
+      Number.isFinite(eventMs) && eventMs > 0 ? new Date(eventMs) : null;
+    const expiryMs = Number(ev.expiration_at_ms);
+    const expiresAt =
+      Number.isFinite(expiryMs) && expiryMs > Date.now()
+        ? new Date(expiryMs)
+        : new Date(Date.now() + 30 * 86400 * 1000);
 
     return this.db.transaction(async (tx) => {
       const tenant = (
@@ -536,29 +602,62 @@ export class BillingService {
       ).rows[0];
       if (!tenant) fail(404, "tenant_not_found");
 
-      if (["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION"].includes(ev.type)) {
-        const plan =
-          IAP_CATALOG.plans.find((p) => p.product_id === productId) ||
-          IAP_CATALOG.plans[1];
+      // Replays of an already processed event must not touch the plan again.
+      const seen = (
+        await tx.query(
+          "SELECT 1 FROM iap_transactions WHERE transaction_id=$1",
+          [txId],
+        )
+      ).rows[0];
+      if (seen) return { ok: true, tenant_id: tenantId, duplicate: true };
+
+      const recordedProduct = productId || tenant.store_product_id || "unknown";
+      const record = () =>
+        tx.query(
+          `INSERT INTO iap_transactions(tenant_id, store, product_id, event_type, transaction_id, price_currency, price_amount, raw_payload)
+           VALUES($1, $2, $3, $4, $5, 'TRY', 0, $6)`,
+          [
+            tenantId,
+            storeName,
+            recordedProduct,
+            ev.type,
+            txId,
+            JSON.stringify(ev),
+          ],
+        );
+
+      // An older event arriving late (e.g. a stale RENEWAL after EXPIRATION) is logged but not applied.
+      if (
+        eventAt &&
+        tenant.store_event_at &&
+        eventAt.getTime() < new Date(tenant.store_event_at).getTime()
+      ) {
+        await record();
+        return { ok: true, tenant_id: tenantId, ignored: "stale_event" };
+      }
+
+      if (plan) {
         await tx.query(
           `UPDATE tenants
            SET plan_tier = $1,
-               status = 'active',
+               status = CASE WHEN status = 'suspended' THEN status ELSE 'active' END,
                agent_limit = GREATEST(agent_limit, $2),
                customer_org_limit = $3,
                monthly_ticket_limit = $4,
                storage_limit_mb = GREATEST(storage_limit_mb, $5),
-               store_provider = 'app_store',
-               store_product_id = $6,
-               subscription_expires_at = now() + interval '30 days'
-           WHERE id = $7`,
+               store_provider = $6,
+               store_product_id = $7,
+               subscription_expires_at = $8
+           WHERE id = $9`,
           [
             plan.id,
             plan.agent_limit,
             plan.customer_org_limit,
             plan.monthly_ticket_limit,
             plan.storage_limit_mb,
+            storeName,
             productId,
+            expiresAt,
             tenantId,
           ],
         );
@@ -569,21 +668,44 @@ export class BillingService {
                agent_limit = 1,
                customer_org_limit = 3,
                monthly_ticket_limit = 25,
-               storage_limit_mb = 500
+               storage_limit_mb = 500,
+               subscription_expires_at = now()
            WHERE id = $1`,
           [tenantId],
         );
+      } else if (ev.type === "BILLING_ISSUE") {
+        await tx.query(
+          "UPDATE tenants SET status = CASE WHEN status = 'suspended' THEN status ELSE 'past_due' END WHERE id = $1",
+          [tenantId],
+        );
       }
-
-      await tx.query(
-        `INSERT INTO iap_transactions(tenant_id, store, product_id, event_type, transaction_id, price_currency, price_amount, raw_payload)
-         VALUES($1, 'app_store', $2, $3, $4, 'TRY', 0, $5)
-         ON CONFLICT (transaction_id) DO NOTHING`,
-        [tenantId, productId, ev.type, txId, JSON.stringify(ev)],
-      );
+      if (eventAt)
+        await tx.query(
+          "UPDATE tenants SET store_event_at = GREATEST(COALESCE(store_event_at, $1), $1) WHERE id = $2",
+          [eventAt, tenantId],
+        );
+      await record();
 
       return { ok: true, tenant_id: tenantId, event_type: ev.type };
     });
+  }
+
+  async rotateInviteCode(user: any) {
+    if (user.role !== "super_admin")
+      fail(403, "this_area_is_restricted_to_super_admins");
+    const tenantId = user.tenant_id || 1;
+    const code = await this.db.transaction(async (tx) => {
+      const next = await uniqueInviteCode(tx);
+      await tx.query("UPDATE tenants SET invite_code=$1 WHERE id=$2", [
+        next,
+        tenantId,
+      ]);
+      await audit(tx, user, "invite_code_rotated", tenantId, {
+        name: user.tenant_name,
+      });
+      return next;
+    });
+    return { ok: true, invite_code: code };
   }
 }
 
@@ -628,6 +750,12 @@ export class BillingController {
   @Get("billing/catalog")
   getCatalog(@Req() req: any) {
     return this.service.getCatalog(req.user);
+  }
+
+  @Post("billing/invite-code/rotate")
+  @HttpCode(200)
+  rotateInviteCode(@Req() req: any) {
+    return this.service.rotateInviteCode(req.user);
   }
 
   @Post("billing/purchase")

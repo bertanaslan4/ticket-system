@@ -20,6 +20,7 @@ import ThemeToggle from "../components/ThemeToggle";
 import { roles } from "../lib/constants";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
+import VerifyEmailBanner from "../features/auth/VerifyEmailBanner";
 import { paths, viewForPath } from "../app/paths";
 import { useTickets } from "../features/tickets/tickets.api";
 export default function AppLayout() {
@@ -180,6 +181,7 @@ export default function AppLayout() {
           </span>
         </header>
         <main>
+          {user.email_verified === false && <VerifyEmailBanner />}
           {error && (
             <div role="alert" className="error">
               {tr(error)}

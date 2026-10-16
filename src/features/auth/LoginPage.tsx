@@ -1,6 +1,6 @@
 import { useLanguage } from "../../i18n/index.js";
-import { useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import LoginForm from "./LoginForm";
 import QueryState from "../../components/QueryState";
@@ -9,9 +9,27 @@ import { api } from "../../lib/api";
 export default function LoginPage() {
   useLanguage();
   const auth = useAuth(),
-    location = useLocation();
+    location = useLocation(),
+    navigate = useNavigate();
   const [error, setError] = useState<unknown>(null),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [notice, setNotice] = useState<string | null>(null);
+  const query = new URLSearchParams(location.search);
+  const resetToken = query.get("reset");
+  const verifyToken = query.get("verify");
+  const verifying = useRef(false);
+  // Emailed verification links land here: confirm once, then drop the token from the URL.
+  useEffect(() => {
+    if (!verifyToken || verifying.current) return;
+    verifying.current = true;
+    api("/public/verify-email", { token: verifyToken })
+      .then(() => {
+        setNotice("email_verified_success");
+        return auth.refresh();
+      })
+      .catch((e) => setError(e))
+      .finally(() => navigate("/login", { replace: true, state: location.state }));
+  }, [verifyToken]);
   const from = location.state?.from;
   const target =
     typeof from === "string" &&
@@ -37,6 +55,37 @@ export default function LoginPage() {
     <LoginForm
       busy={busy}
       error={tr(error)}
+      notice={notice ? tr(notice) : null}
+      resetToken={resetToken}
+      onForgot={async (body: unknown) => {
+        setBusy(true);
+        setError(null);
+        try {
+          await api("/public/forgot-password", body);
+          setNotice("reset_link_sent");
+          return true;
+        } catch (e) {
+          setError(e);
+          return false;
+        } finally {
+          setBusy(false);
+        }
+      }}
+      onReset={async (body: unknown) => {
+        setBusy(true);
+        setError(null);
+        try {
+          await api("/public/reset-password", body);
+          setNotice("password_reset_done");
+          navigate("/login", { replace: true, state: location.state });
+          return true;
+        } catch (e) {
+          setError(e);
+          return false;
+        } finally {
+          setBusy(false);
+        }
+      }}
       onLogin={async (body: unknown) => {
         setBusy(true);
         setError(null);

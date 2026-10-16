@@ -1,11 +1,106 @@
 import { Injectable } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service.js";
+import { MailService } from "../mail/mail.service.js";
 import { fail, text, choice, userSql } from "../common/domain.js";
+import { issueAuthToken } from "../common/auth-tokens.js";
 import { verifyPassword, hashPassword, tokenHash, newToken } from "../auth.js";
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    private readonly mail: MailService,
+  ) {}
+  /** Always answers ok so the endpoint cannot be used to discover registered addresses. */
+  async forgotPassword(body: any) {
+    const email = text(body.email, 3, 200).toLowerCase();
+    await this.database.transaction(async (tx) => {
+      const found = (
+        await tx.query(
+          "SELECT u.id,u.name,u.email FROM users u JOIN tenants t ON t.id=u.tenant_id WHERE u.email=$1 AND u.active=true AND u.deleted_at IS NULL AND t.status<>'suspended'",
+          [email],
+        )
+      ).rows[0];
+      if (found) await issueAuthToken(tx, this.mail, found, "password_reset");
+    });
+    return { ok: true };
+  }
+  async resetPassword(body: any) {
+    const token = typeof body.token === "string" ? body.token.trim() : "";
+    if (!/^[a-f0-9]{64}$/.test(token)) fail(400, "invalid_or_expired_token");
+    const password = text(body.newPassword, 8, 200);
+    if (password !== body.newPassword) fail(400, "password_no_outer_spaces");
+    if (body.confirmPassword !== undefined && password !== body.confirmPassword)
+      fail(400, "password_confirmation_mismatch");
+    await this.database.transaction(async (tx) => {
+      const row = (
+        await tx.query(
+          "SELECT id,user_id FROM auth_tokens WHERE token_hash=$1 AND kind='password_reset' AND used_at IS NULL AND expires_at>now() FOR UPDATE",
+          [tokenHash(token)],
+        )
+      ).rows[0];
+      if (!row) fail(400, "invalid_or_expired_token");
+      const user = (
+        await tx.query(
+          "SELECT id FROM users WHERE id=$1 AND active=true AND deleted_at IS NULL FOR UPDATE",
+          [row.user_id],
+        )
+      ).rows[0];
+      if (!user) fail(400, "invalid_or_expired_token");
+      // Receiving the link proves control of the mailbox, so the address counts as verified.
+      await tx.query(
+        "UPDATE users SET password_hash=$1,email_verified_at=COALESCE(email_verified_at,now()) WHERE id=$2",
+        [hashPassword(password), user.id],
+      );
+      await tx.query(
+        "UPDATE auth_tokens SET used_at=now() WHERE user_id=$1 AND kind='password_reset' AND used_at IS NULL",
+        [user.id],
+      );
+      await tx.query("DELETE FROM sessions WHERE user_id=$1", [user.id]);
+    });
+    return { ok: true };
+  }
+  async verifyEmail(body: any) {
+    const token = typeof body.token === "string" ? body.token.trim() : "";
+    if (!/^[a-f0-9]{64}$/.test(token)) fail(400, "invalid_or_expired_token");
+    await this.database.transaction(async (tx) => {
+      const row = (
+        await tx.query(
+          "SELECT id,user_id FROM auth_tokens WHERE token_hash=$1 AND kind='email_verify' AND used_at IS NULL AND expires_at>now() FOR UPDATE",
+          [tokenHash(token)],
+        )
+      ).rows[0];
+      if (!row) fail(400, "invalid_or_expired_token");
+      await tx.query("UPDATE auth_tokens SET used_at=now() WHERE id=$1", [
+        row.id,
+      ]);
+      await tx.query(
+        "UPDATE users SET email_verified_at=COALESCE(email_verified_at,now()) WHERE id=$1",
+        [row.user_id],
+      );
+    });
+    return { ok: true };
+  }
+  async resendVerification(user: any) {
+    await this.database.transaction(async (tx) => {
+      const current = (
+        await tx.query(
+          "SELECT id,name,email,email_verified_at FROM users WHERE id=$1 FOR UPDATE",
+          [user.id],
+        )
+      ).rows[0];
+      if (!current || current.email_verified_at) return;
+      const recent = (
+        await tx.query(
+          "SELECT 1 FROM auth_tokens WHERE user_id=$1 AND kind='email_verify' AND created_at>now()-interval '60 seconds'",
+          [user.id],
+        )
+      ).rows[0];
+      if (recent) fail(429, "verification_resend_too_soon");
+      await issueAuthToken(tx, this.mail, current, "email_verify");
+    });
+    return { ok: true };
+  }
   async changePassword(user: any, token: string, body: any) {
     const current = text(body.currentPassword, 1, 200);
     const password = text(body.newPassword, 8, 200);

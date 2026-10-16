@@ -36,7 +36,7 @@ test("self-service workspace signup, invite code join, free tier quotas, IAP upg
   assert.equal(signupData.tenant.agent_limit, 1);
   assert.equal(signupData.tenant.customer_org_limit, 3);
   assert.equal(signupData.tenant.monthly_ticket_limit, 25);
-  assert.match(signupData.tenant.invite_code, /^BKT-[A-Z0-9]{4}$/);
+  assert.match(signupData.tenant.invite_code, /^BKT-[A-Z2-9]{6}$/);
 
   const adminToken = signupData.token;
   const inviteCode = signupData.tenant.invite_code;
@@ -141,6 +141,36 @@ test("self-service workspace signup, invite code join, free tier quotas, IAP upg
   assert.equal(catalog.tenant.plan_tier, "free");
   assert.equal(catalog.plans.length, 3);
   assert.equal(catalog.addons.length, 2);
+
+  // Plan purchases require a verified email address
+  const unverifiedPurchase = await fetch(ctx.url + "/api/billing/purchase", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${adminToken}`,
+    },
+    body: JSON.stringify({
+      product_id: "bekatos_starter_monthly",
+      store: "app_store",
+      transaction_id: "GPA.0999-UNVERIFIED",
+    }),
+  });
+  assert.equal(unverifiedPurchase.status, 403);
+  assert.equal((await unverifiedPurchase.json()).errorKey, "email_verification_required");
+
+  const mailRow = (
+    await ctx.db.query(
+      "SELECT payload FROM auth_mail_outbox WHERE kind='email_verify' AND payload->'to'->>0=$1 ORDER BY id DESC LIMIT 1",
+      ["emre@novaservis.io"],
+    )
+  ).rows[0];
+  const verifyToken = mailRow.payload.data.link.split("verify=")[1];
+  const verifyRes = await fetch(ctx.url + "/api/public/verify-email", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token: verifyToken }),
+  });
+  assert.equal(verifyRes.status, 200);
 
   // Upgrade to Starter via IAP
   const upgradeRes = await fetch(ctx.url + "/api/billing/purchase", {
