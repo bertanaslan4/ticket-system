@@ -16,6 +16,7 @@ import { BillingModule } from './billing/billing.module.js';
 import { KnowledgeBaseModule } from './kb/kb.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
 import { IntegrationsModule } from './integrations/integrations.module.js';
+import { WidgetModule } from './widget/widget.module.js';
 @Module({})
 export class AppModule {
   static register(db: any): DynamicModule {
@@ -35,6 +36,7 @@ export class AppModule {
         KnowledgeBaseModule,
         TasksModule,
         IntegrationsModule,
+        WidgetModule,
         UsersModule,
         ReportsModule,
         AuditModule,

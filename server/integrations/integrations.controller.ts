@@ -43,4 +43,14 @@ export class IntegrationsController {
   testWebhook(@Req() req: any, @Body() body: any) {
     return this.service.testWebhook(req.user, body);
   }
+
+  @Get("widget")
+  getWidgetConfig(@Req() req: any) {
+    return this.service.getWidgetConfig(req.user);
+  }
+
+  @Post("widget")
+  saveWidgetConfig(@Req() req: any, @Body() body: any) {
+    return this.service.saveWidgetConfig(req.user, body);
+  }
 }

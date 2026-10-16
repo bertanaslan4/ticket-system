@@ -382,4 +382,48 @@ export class IntegrationsService {
       return false;
     }
   }
+
+  async getWidgetConfig(user: any) {
+    this.ensureAdmin(user);
+    const tenantId = user.tenant_id || 1;
+    const row = (
+      await this.db.query(
+        "SELECT slug, widget_enabled, widget_title, widget_color, widget_greeting, widget_position FROM tenants WHERE id = $1",
+        [tenantId],
+      )
+    ).rows[0];
+
+    return {
+      slug: row?.slug || "primary",
+      widget_enabled: row?.widget_enabled !== false,
+      widget_title: row?.widget_title || "Canlı Destek",
+      widget_color: row?.widget_color || "#3b4cb8",
+      widget_greeting: row?.widget_greeting || "Merhaba! Size nasıl yardımcı olabiliriz?",
+      widget_position: row?.widget_position || "right",
+    };
+  }
+
+  async saveWidgetConfig(user: any, body: any) {
+    this.ensureAdmin(user);
+    const tenantId = user.tenant_id || 1;
+
+    const enabled = body.widget_enabled !== false;
+    const title = typeof body.widget_title === "string" ? body.widget_title.trim() : "Canlı Destek";
+    const color = typeof body.widget_color === "string" && /^#[0-9a-fA-F]{3,8}$/.test(body.widget_color) ? body.widget_color : "#3b4cb8";
+    const greeting = typeof body.widget_greeting === "string" ? body.widget_greeting.trim() : "Merhaba! Size nasıl yardımcı olabiliriz?";
+    const position = ["right", "left"].includes(body.widget_position) ? body.widget_position : "right";
+
+    await this.db.query(
+      `UPDATE tenants SET 
+        widget_enabled = $2,
+        widget_title = $3,
+        widget_color = $4,
+        widget_greeting = $5,
+        widget_position = $6
+       WHERE id = $1`,
+      [tenantId, enabled, title, color, greeting, position],
+    );
+
+    return this.getWidgetConfig(user);
+  }
 }

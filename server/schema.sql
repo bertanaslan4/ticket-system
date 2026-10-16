@@ -344,3 +344,11 @@ ALTER TABLE tenants ADD COLUMN IF NOT EXISTS webhook_teams_url TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS webhook_slack_url TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS webhook_events TEXT NOT NULL DEFAULT 'ticket.created,ticket.closed,ticket.urgent';
 
+-- Phase 9: Embeddable Web Support Widget
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS widget_enabled BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS widget_title TEXT DEFAULT 'Canlı Destek';
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS widget_color TEXT DEFAULT '#3b4cb8';
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS widget_greeting TEXT DEFAULT 'Merhaba! Size nasıl yardımcı olabiliriz?';
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS widget_position TEXT DEFAULT 'right' CHECK(widget_position IN ('right','left'));
+
+

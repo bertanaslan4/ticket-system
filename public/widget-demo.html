@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bekatos Canlı Destek Widget Demosu</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 60px 20px;
+      background: #f1f5f9;
+      color: #1e293b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .demo-card {
+      max-width: 680px;
+      width: 100%;
+      background: #ffffff;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+      border: 1px solid #e2e8f0;
+      text-align: center;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: rgba(59, 76, 184, 0.12);
+      color: #3b4cb8;
+      font-weight: 700;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-size: 28px;
+      margin: 8px 0 16px;
+      color: #0a0b4e;
+    }
+    p {
+      color: #64748b;
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    .code-block {
+      background: #0f172a;
+      color: #38bdf8;
+      padding: 16px;
+      border-radius: 12px;
+      font-family: monospace;
+      font-size: 13px;
+      text-align: left;
+      overflow-x: auto;
+      margin: 24px 0;
+    }
+    .hint-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 13px;
+      color: #1e40af;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-card">
+    <span class="badge">GÖMÜLEBİLİR WEB WIDGET DEMO</span>
+    <h1>Web Siteniz İçin Canlı Destek Balonu</h1>
+    <p>
+      Bu demo sayfası, harici bir müşteri e-ticaret sitesini veya kurumsal web sayfasını temsil eder.
+      Sağ alttaki mavi destek balonuna tıklayarak bilet açabilir, bilgi bankasında arama yapabilir veya bilet durumunuzu sorgulayabilirsiniz.
+    </p>
+
+    <div class="code-block">
+&lt;!-- Herhangi bir web sitesine eklenecek tek satırlık kod: --&gt;
+&lt;script
+  src="http://localhost:3000/widget.js"
+  data-tenant="primary"
+  data-color="#3b4cb8"
+  data-title="Bekatos Canlı Destek"
+  defer
+&gt;&lt;/script&gt;
+    </div>
+
+    <div class="hint-box">
+      💡 <strong>Nasıl Çalışır?</strong> Web sitesi ziyaretçileri sisteme üye olmadan veya şifre girmeden destek bileti açabilir. İsim ve e-posta ile otomatik kullanıcı ve bilet oluşturulur, SLA sayaçları başlar ve Microsoft Teams kanalına anında acil bildirim fırlatılır!
+    </div>
+  </div>
+
+  <!-- Embed Widget -->
+  <script
+    src="/widget.js"
+    data-tenant="1"
+    data-color="#3b4cb8"
+    data-title="Bekatos Canlı Destek"
+    data-position="right"
+    defer
+  ></script>
+</body>
+</html>

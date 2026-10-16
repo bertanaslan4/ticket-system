@@ -48,9 +48,19 @@ export async function createApp(db: any, { frontend = false } = {}) {
             errorParams: body.errorParams || {},
           })
         : json(body);
+    if (req.path.startsWith("/widget") || req.path.startsWith("/api/widget")) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
+      if (req.method === "OPTIONS") {
+        return res.sendStatus(204);
+      }
+    }
     if (
       !["GET", "HEAD", "OPTIONS"].includes(req.method) &&
       !req.path.startsWith("/webhooks") &&
+      !req.path.startsWith("/widget") &&
+      !req.path.startsWith("/api/widget") &&
       req.headers.origin &&
       req.headers.origin !== (process.env.APP_ORIGIN || "http://localhost:3000")
     )
