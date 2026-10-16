@@ -2563,3 +2563,254 @@ dialog.modal::backdrop,
   }
 }
 
+/* Phase 11: AI Copilot & Smart Triaging */
+.ai-copilot-card {
+  margin-top: 18px;
+  border: 1px solid var(--card-border, #e2ebf1);
+  border-radius: 12px;
+  background: var(--card-bg, #ffffff);
+  padding: 20px 22px;
+  background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent 60%);
+  position: relative;
+  overflow: hidden;
+}
+.ai-copilot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.ai-badge-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ai-copilot-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #4f46e5;
+  background: rgba(99, 102, 241, 0.12);
+  padding: 3px 8px;
+  border-radius: 6px;
+  width: fit-content;
+}
+.sparkle-icon {
+  color: #6366f1;
+}
+.ai-copilot-card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+}
+.ai-sentiment-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sentiment-urgent {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.sentiment-negative {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.sentiment-neutral {
+  background: rgba(100, 116, 139, 0.12);
+  color: #475569;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+}
+.sentiment-positive {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.ai-triaging-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  padding: 14px;
+  background: #f8fafc;
+  border-radius: 9px;
+  border: 1px solid var(--card-border, #e2ebf1);
+  margin-bottom: 16px;
+}
+.ai-triage-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ai-triage-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.4px;
+}
+.ai-triage-value-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ai-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ai-apply-btn:hover {
+  background: #e0e7ff;
+}
+.ai-tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ai-topic-tag {
+  background: #e0e7ff;
+  color: #3730a3;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.ai-draft-section {
+  border-top: 1px solid var(--card-border, #e2ebf1);
+  padding-top: 16px;
+}
+.ai-draft-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.ai-tab-btn {
+  background: none;
+  border: 1px solid var(--card-border, #cbd5e1);
+  border-radius: 7px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #475569);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ai-tab-btn.active {
+  background: #4f46e5;
+  color: #ffffff;
+  border-color: #4f46e5;
+}
+.ai-generate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.ai-generate-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+.ai-draft-result {
+  margin-top: 14px;
+}
+.ai-draft-box {
+  background: #ffffff;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  padding: 14px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.ai-draft-text {
+  margin: 0;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--text-primary, #1e293b);
+}
+.ai-draft-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.ai-apply-draft-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Dark mode adjustments for AI Copilot */
+[data-theme="dark"] .ai-copilot-card {
+  background-color: var(--card-bg, #1e293b);
+  border-color: var(--card-border, #334155);
+  background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.12), transparent 60%);
+}
+[data-theme="dark"] .ai-copilot-badge {
+  background: rgba(99, 102, 241, 0.25);
+  color: #a5b4fc;
+}
+[data-theme="dark"] .ai-triaging-grid {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: #334155;
+}
+[data-theme="dark"] .ai-triage-label {
+  color: #94a3b8;
+}
+[data-theme="dark"] .ai-apply-btn {
+  background: rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
+  border-color: rgba(99, 102, 241, 0.4);
+}
+[data-theme="dark"] .ai-topic-tag {
+  background: rgba(99, 102, 241, 0.25);
+  color: #e0e7ff;
+}
+[data-theme="dark"] .ai-tab-btn {
+  border-color: #334155;
+  color: #94a3b8;
+}
+[data-theme="dark"] .ai-tab-btn.active {
+  background: #6366f1;
+  color: #ffffff;
+  border-color: #6366f1;
+}
+[data-theme="dark"] .ai-draft-box {
+  background: #0f172a;
+  border-color: #3730a3;
+}
+[data-theme="dark"] .ai-draft-text {
+  color: #f1f5f9;
+}
+
+

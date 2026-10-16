@@ -15,12 +15,14 @@ import TicketTimeline from "./TicketTimeline";
 import TicketResolution from "./TicketResolution";
 import TicketCsatCard from "./TicketCsatCard";
 import TicketSubtasks from "./TicketSubtasks";
+import TicketAiCopilot from "./TicketAiCopilot";
 import { customerContactRole, isCustomerContact, previousSupportCompany } from '../../../shared/support-flow.js';
 export default function Detail({ ticket: t, user, busy, onAction, back }: any) {
   useLanguage();
   const [formVersion, setFormVersion] = useState(0);
   const [tab, setTab] = useState("comment"),
-    [org, setOrg] = useState(String(t.owner_org_id));
+    [org, setOrg] = useState(String(t.owner_org_id)),
+    [bodyText, setBodyText] = useState("");
   const owned =
     !["customer", "super_admin"].includes(user.role) &&
     user.org_id === t.owner_org_id &&
@@ -45,6 +47,7 @@ export default function Detail({ ticket: t, user, busy, onAction, back }: any) {
         confirmed: data.confirmed === "on",
       });
       form.reset();
+      setBodyText("");
       setFormVersion((v) => v + 1);
     } catch {
       /* The page displays the mutation error; keep the draft. */
@@ -138,6 +141,17 @@ export default function Detail({ ticket: t, user, busy, onAction, back }: any) {
             </dl>
           </section>
           <TicketSubtasks ticketId={t.id} user={user} />
+          <TicketAiCopilot
+            ticket={t}
+            user={user}
+            onApplyDraft={(text) => {
+              setBodyText(text);
+              if (!["comment", "resolve", "close"].includes(tab)) {
+                setTab("comment");
+              }
+            }}
+            onUpdateSeverity={(sev) => onAction({ action: "severity", severity: sev })}
+          />
           {t.status !== "closed" && !canComment ? (
             <div className="panel detail-section"><p className="hint">{tr("comment_requires_current_owner")}</p></div>
           ) : t.status !== "closed" ? (
@@ -217,6 +231,8 @@ export default function Detail({ ticket: t, user, busy, onAction, back }: any) {
                           : tr("your_comment")}
                       <textarea
                         name="body"
+                        value={bodyText}
+                        onChange={(e) => setBodyText(e.target.value)}
                         rows={5}
                         required
                         minLength={tab === "comment" ? 1 : 10}

@@ -6,6 +6,7 @@ import { DatabaseService } from "../database/database.service.js";
 import { fail, text, choice, userSql, enrichTicketSla, applyTicketSlaTargets } from "../common/domain.js";
 import { translate } from "../../shared/i18n.js";
 import { customerContactRole, isCustomerContact, adjacentSupportCompanies, previousSupportCompany } from '../../shared/support-flow.js';
+import { AiService } from "../ai/ai.service.js";
 function access(u, t) {
   if ((t.tenant_id || 1) !== (u.tenant_id || 1)) return false;
   if (u.role === "super_admin") return true;
@@ -57,6 +58,7 @@ export class TicketsService {
     private readonly storage: AttachmentStorage,
     private readonly mail: MailService,
     @Optional() private readonly integrations?: IntegrationsService,
+    @Optional() private readonly aiService?: AiService,
   ) {}
   async withFiles(files: any[], work: (items: any[]) => Promise<any>) {
     const items = await this.storage.save(files);
@@ -216,6 +218,12 @@ export class TicketsService {
       description = text(body.description, 10),
       type = choice(body.type, ["Hata", "İstek"]),
       severity = choice(body.severity, ["s1", "s2", "s3"]);
+    let triage: any = null;
+    if (this.aiService) {
+      try {
+        triage = await this.aiService.triage({ title, description, tenant_id: u.tenant_id || 1 });
+      } catch {}
+    }
     const ticket = await db.transaction(async (tx) => {
       const org = (
         await tx.query("SELECT * FROM organizations WHERE id=$1 FOR UPDATE", [
@@ -260,6 +268,18 @@ export class TicketsService {
         const t = (await tx.query('INSERT INTO tickets(tenant_id,customer_id,created_by,program,title,description,type,severity,owner_org_id,support_chain,visible_support_org_ids) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *', [tenantId,org.id,u.id,org.program,title,description,type,severity,ownerId,org.support_chain,[ownerId]])).rows[0];
         await tx.query('UPDATE tickets SET product_id=$1 WHERE id=$2',[product.id,t.id]);
         t.product_id = product.id;
+        if (triage) {
+          try {
+            await tx.query(
+              "UPDATE tickets SET ai_suggested_severity=$1, ai_sentiment=$2, ai_summary=$3, ai_tags=$4 WHERE id=$5",
+              [triage.suggested_severity, triage.sentiment, triage.summary, triage.tags.join(", "), t.id],
+            );
+            t.ai_suggested_severity = triage.suggested_severity;
+            t.ai_sentiment = triage.sentiment;
+            t.ai_summary = triage.summary;
+            t.ai_tags = triage.tags.join(", ");
+          } catch {}
+        }
         await applyTicketSlaTargets(tx, t);
         const created = await event(tx,t,u,'created',{key:'event_ticket_created',params:{company:companies.find(c => c.id === ownerId).name}});
         await this.attach(tx,t,null,items);
@@ -298,6 +318,18 @@ export class TicketsService {
       ).rows[0];
       await tx.query('UPDATE tickets SET product_id=$1 WHERE id=$2',[product.id,t.id]);
       t.product_id = product.id;
+      if (triage) {
+        try {
+          await tx.query(
+            "UPDATE tickets SET ai_suggested_severity=$1, ai_sentiment=$2, ai_summary=$3, ai_tags=$4 WHERE id=$5",
+            [triage.suggested_severity, triage.sentiment, triage.summary, triage.tags.join(", "), t.id],
+          );
+          t.ai_suggested_severity = triage.suggested_severity;
+          t.ai_sentiment = triage.sentiment;
+          t.ai_summary = triage.summary;
+          t.ai_tags = triage.tags.join(", ");
+        } catch {}
+      }
       await applyTicketSlaTargets(tx, t);
       const created = await event(tx, t, u, "created", {
         key: "event_ticket_created",

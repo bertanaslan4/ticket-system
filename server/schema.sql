@@ -365,5 +365,16 @@ CREATE INDEX IF NOT EXISTS csat_surveys_tenant_idx ON csat_surveys(tenant_id);
 CREATE INDEX IF NOT EXISTS csat_surveys_ticket_idx ON csat_surveys(ticket_id);
 CREATE INDEX IF NOT EXISTS csat_surveys_rating_idx ON csat_surveys(tenant_id, rating);
 
+-- Phase 11: AI Copilot & Smart Triaging
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS ai_copilot_enabled BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS ai_auto_triage BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS ai_tone TEXT NOT NULL DEFAULT 'professional';
+
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS ai_suggested_severity TEXT;
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS ai_sentiment TEXT DEFAULT 'neutral';
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS ai_summary TEXT DEFAULT '';
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS ai_tags TEXT DEFAULT '';
+
+
 
 

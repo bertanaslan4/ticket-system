@@ -14,11 +14,16 @@ import {
   ExternalLink,
   Copy,
   Check,
+  Sparkles,
+  Bot,
+  Zap,
+  Tag,
+  BookOpen,
 } from "lucide-react";
 import { tr } from "../../i18n/index.js";
 
 export default function IntegrationsPage() {
-  const [activeTab, setActiveTab] = useState<"smtp" | "webhooks" | "widget">("smtp");
+  const [activeTab, setActiveTab] = useState<"smtp" | "webhooks" | "widget" | "ai">("smtp");
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -50,12 +55,22 @@ export default function IntegrationsPage() {
   const [tenantSlug, setTenantSlug] = useState("primary");
   const [copied, setCopied] = useState(false);
 
+  // AI Copilot State
+  const [aiEnabled, setAiEnabled] = useState(true);
+  const [aiAutoTriage, setAiAutoTriage] = useState(true);
+  const [aiTone, setAiTone] = useState("professional");
+  const [testAiTitle, setTestAiTitle] = useState("Kasa POS barkod okuyucu yanıt vermiyor, acil satış yapamıyoruz");
+  const [testAiDesc, setTestAiDesc] = useState("Kasada müşteri kuyruğu oluştu, USB bağlantısı kopuyor ve sistem hata kodu 504 veriyor.");
+  const [testingAi, setTestingAi] = useState(false);
+  const [aiTestResult, setAiTestResult] = useState<any>(null);
+
   const fetchConfigs = async () => {
     try {
-      const [smtpRes, hookRes, widgetRes] = await Promise.all([
+      const [smtpRes, hookRes, widgetRes, aiRes] = await Promise.all([
         fetch("/api/admin/integrations/smtp"),
         fetch("/api/admin/integrations/webhooks"),
         fetch("/api/admin/integrations/widget"),
+        fetch("/api/ai/config"),
       ]);
 
       if (smtpRes.ok) {
@@ -84,6 +99,13 @@ export default function IntegrationsPage() {
         setWidgetGreeting(w.widget_greeting || "Merhaba! Size nasıl yardımcı olabiliriz?");
         setWidgetPosition(w.widget_position || "right");
         setTenantSlug(w.slug || "primary");
+      }
+
+      if (aiRes.ok) {
+        const a = await aiRes.json();
+        setAiEnabled(a.ai_copilot_enabled !== false);
+        setAiAutoTriage(a.ai_auto_triage !== false);
+        setAiTone(a.ai_tone || "professional");
       }
     } catch (e) {
       console.error(e);
@@ -229,6 +251,52 @@ export default function IntegrationsPage() {
     }
   };
 
+  const handleSaveAi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatusMsg(null);
+    try {
+      const res = await fetch("/api/ai/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ai_copilot_enabled: aiEnabled,
+          ai_auto_triage: aiAutoTriage,
+          ai_tone: aiTone,
+        }),
+      });
+      if (res.ok) {
+        setStatusMsg({ type: "success", text: "AI Copilot ayarları başarıyla kaydedildi." });
+        fetchConfigs();
+      } else {
+        setStatusMsg({ type: "error", text: "AI ayarları kaydedilemedi." });
+      }
+    } catch {
+      setStatusMsg({ type: "error", text: "Sunucu hatası oluştu." });
+    }
+  };
+
+  const handleTestAi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTestingAi(true);
+    setAiTestResult(null);
+    try {
+      const res = await fetch("/api/ai/triage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: testAiTitle,
+          description: testAiDesc,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiTestResult(data);
+      }
+    } finally {
+      setTestingAi(false);
+    }
+  };
+
   const embedScriptCode = `<script\n  src="${window.location.origin}/widget.js"\n  data-tenant="${tenantSlug}"\n  data-color="${widgetColor}"\n  data-title="${widgetTitle}"\n  data-position="${widgetPosition}"\n  defer\n></script>`;
 
   const copyEmbedCode = () => {
@@ -324,6 +392,25 @@ export default function IntegrationsPage() {
           }}
         >
           <MessageCircle size={18} /> Web Destek Balonu (Widget)
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("ai")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 18px",
+            borderRadius: 8,
+            border: "none",
+            background: activeTab === "ai" ? "var(--brand-sky, #3b4cb8)" : "transparent",
+            color: activeTab === "ai" ? "#fff" : "var(--text-secondary)",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          <Sparkles size={18} /> AI Copilot & Triyaj
         </button>
       </div>
 
@@ -679,6 +766,304 @@ export default function IntegrationsPage() {
             >
               {embedScriptCode}
             </pre>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 4: AI Copilot & Smart Triaging */}
+      {activeTab === "ai" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {/* AI Settings Panel */}
+          <div className="panel" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, rgba(79, 70, 229, 0.15), rgba(124, 58, 237, 0.15))",
+                  color: "#6366f1",
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                <Sparkles size={22} />
+              </div>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18 }}>AI Copilot & Akıllı Triyaj Konfigürasyonu</h2>
+                <small className="muted">
+                  Biletleri otomatik sınıflandırın, önem derecesi belirleyin ve temsilcileriniz için tek tıkla yanıt taslakları oluşturun.
+                </small>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveAi} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, borderBottom: "1px solid var(--card-border)", paddingBottom: 16 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 500 }}>
+                  <input
+                    type="checkbox"
+                    checked={aiEnabled}
+                    onChange={(e) => setAiEnabled(e.target.checked)}
+                    style={{ width: 18, height: 18, cursor: "pointer" }}
+                  />
+                  <span>AI Copilot Asistanını Etkinleştir (Temsilci bilet ekranında yanıt taslağı ve öneri asistanı)</span>
+                </label>
+
+                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 500 }}>
+                  <input
+                    type="checkbox"
+                    checked={aiAutoTriage}
+                    onChange={(e) => setAiAutoTriage(e.target.checked)}
+                    style={{ width: 18, height: 18, cursor: "pointer" }}
+                  />
+                  <span>Yeni Biletlerde Otomatik Triyaj & Etiketleme (Önem derecesi, duygu ve konu etiketleri otomatik tespit edilir)</span>
+                </label>
+              </div>
+
+              <div style={{ maxWidth: 440 }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ fontWeight: 600 }}>Varsayılan AI Yanıt Tonu (Draft Tone)</span>
+                  <select
+                    value={aiTone}
+                    onChange={(e) => setAiTone(e.target.value)}
+                    style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--card-border)" }}
+                  >
+                    <option value="professional">Profesyonel & Kurumsal (Çözüm odaklı ve resmi)</option>
+                    <option value="friendly">Samimi & Destekleyici (Kullanıcı dostu ve empatik)</option>
+                    <option value="concise">Kısa, Net & Hızlı (Doğrudan adımlara odaklı)</option>
+                  </select>
+                </label>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button type="submit" className="primary" style={{ padding: "10px 24px" }}>
+                  AI Ayarlarını Kaydet
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* AI Triaging Live Playground */}
+          <div className="panel" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: "rgba(16, 185, 129, 0.12)",
+                  color: "#10b981",
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                <Bot size={22} />
+              </div>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18 }}>Canlı AI Triyaj Playground (Test Alanı)</h2>
+                <small className="muted">
+                  Sistemin gelen talepleri nasıl analiz ettiğini, aciliyetini nasıl puanladığını ve hangi seviyeyi önerdiğini anlık olarak test edin.
+                </small>
+              </div>
+            </div>
+
+            <form onSubmit={handleTestAi} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={{ fontWeight: 600 }}>Örnek Talep Başlığı</span>
+                <input
+                  type="text"
+                  value={testAiTitle}
+                  onChange={(e) => setTestAiTitle(e.target.value)}
+                  placeholder="Örn: POS cihazı açılmıyor veya veri tabanı kilitlendi"
+                  required
+                />
+              </label>
+
+              <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={{ fontWeight: 600 }}>Örnek Talep Açıklaması</span>
+                <textarea
+                  value={testAiDesc}
+                  onChange={(e) => setTestAiDesc(e.target.value)}
+                  rows={3}
+                  placeholder="Müşterinin ilettiği hata veya talep detayları..."
+                  required
+                />
+              </label>
+
+              <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                <button
+                  type="submit"
+                  className="secondary"
+                  disabled={testingAi}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px" }}
+                >
+                  <Zap size={16} />
+                  {testingAi ? "Analiz Ediliyor..." : "Triyaj Analizi Yap"}
+                </button>
+              </div>
+            </form>
+
+            {/* Test Results Output */}
+            {aiTestResult && (
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: 20,
+                  borderRadius: 12,
+                  background: "var(--workspace-bg, #f8fafc)",
+                  border: "1px solid var(--card-border, #e2e8f0)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>Önerilen Seviye:</span>
+                    <span
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: 6,
+                        fontWeight: 700,
+                        fontSize: 12,
+                        textTransform: "uppercase",
+                        background:
+                          aiTestResult.suggested_severity === "s1"
+                            ? "rgba(239, 68, 68, 0.15)"
+                            : aiTestResult.suggested_severity === "s2"
+                            ? "rgba(249, 115, 22, 0.15)"
+                            : "rgba(59, 130, 246, 0.15)",
+                        color:
+                          aiTestResult.suggested_severity === "s1"
+                            ? "#ef4444"
+                            : aiTestResult.suggested_severity === "s2"
+                            ? "#f97316"
+                            : "#3b82f6",
+                      }}
+                    >
+                      {aiTestResult.suggested_severity.toUpperCase()} - {aiTestResult.suggested_severity === "s1" ? "Kritik" : aiTestResult.suggested_severity === "s2" ? "Yüksek" : "Normal"}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>Talep Türü:</span>
+                    <span
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: 6,
+                        fontWeight: 600,
+                        fontSize: 12,
+                        background: "rgba(100, 116, 139, 0.15)",
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {aiTestResult.suggested_type}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>Aciliyet Skoru:</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <div
+                        style={{
+                          width: 80,
+                          height: 8,
+                          borderRadius: 4,
+                          background: "#e2e8f0",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${aiTestResult.urgency_score}%`,
+                            height: "100%",
+                            background:
+                              aiTestResult.urgency_score >= 70
+                                ? "#ef4444"
+                                : aiTestResult.urgency_score >= 40
+                                ? "#f97316"
+                                : "#10b981",
+                          }}
+                        />
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 700 }}>%{aiTestResult.urgency_score}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>Duygu Durumu:</span>
+                    <span
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: 6,
+                        fontWeight: 600,
+                        fontSize: 12,
+                        background:
+                          aiTestResult.sentiment === "negative"
+                            ? "rgba(239, 68, 68, 0.12)"
+                            : aiTestResult.sentiment === "positive"
+                            ? "rgba(16, 185, 129, 0.12)"
+                            : "rgba(100, 116, 139, 0.12)",
+                        color:
+                          aiTestResult.sentiment === "negative"
+                            ? "#ef4444"
+                            : aiTestResult.sentiment === "positive"
+                            ? "#10b981"
+                            : "var(--text-secondary)",
+                      }}
+                    >
+                      {aiTestResult.sentiment === "negative" ? "Stresli / Acil" : aiTestResult.sentiment === "positive" ? "Pozitif" : "Nötr"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* AI Summary */}
+                <div style={{ padding: "12px 14px", background: "var(--card-bg, #ffffff)", borderRadius: 8, border: "1px solid var(--card-border, #e2e8f0)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4 }}>AI Problem Özeti:</div>
+                  <div style={{ fontSize: 13, color: "var(--text-primary)" }}>{aiTestResult.summary}</div>
+                </div>
+
+                {/* Topic Tags */}
+                {aiTestResult.tags && aiTestResult.tags.length > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 4 }}>
+                      <Tag size={13} /> Etiketler:
+                    </span>
+                    {aiTestResult.tags.map((tag: string) => (
+                      <span
+                        key={tag}
+                        style={{
+                          background: "rgba(99, 102, 241, 0.12)",
+                          color: "#4f46e5",
+                          padding: "3px 8px",
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 600,
+                        }}
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* KB Suggestions */}
+                {aiTestResult.suggested_kb_articles && aiTestResult.suggested_kb_articles.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 4 }}>
+                      <BookOpen size={13} /> Önerilen Bilgi Bankası Makaleleri:
+                    </span>
+                    <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
+                      {aiTestResult.suggested_kb_articles.map((art: any, i: number) => (
+                        <li key={i} style={{ marginBottom: 4 }}>
+                          <strong>{art.title}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

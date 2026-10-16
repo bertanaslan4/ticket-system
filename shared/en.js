@@ -632,7 +632,29 @@ storage_destination_locked:"Changing account or bucket requires migration to pre
   ticket_must_be_closed_to_rate: "Only closed tickets can be rated.",
   only_customer_can_rate_ticket: "Only the customer can rate this ticket.",
   invalid_rating: "Please select a valid rating between 1 and 5.",
+  ai_copilot: "AI Copilot & Smart Assistant",
+  ai_triaging: "AI Triaging",
+  ai_suggested_priority: "AI Suggested Priority",
+  ai_suggested_type: "AI Suggested Type",
+  ai_detected_topics: "Detected Topics",
+  ai_urgency_score: "Urgency Score",
+  ai_generate_draft: "Generate AI Response Draft",
+  ai_generating_draft: "Generating Draft…",
+  ai_use_draft: "Use Draft in Reply",
+  ai_draft_type_solution: "Solution Note",
+  ai_draft_type_first_response: "First Response",
+  ai_draft_type_clarification: "Request More Info",
+  ai_apply_priority: "Apply Priority",
+  ai_priority_applied: "Priority updated successfully",
+  ai_sentiment_urgent: "Urgent / High Risk",
+  ai_sentiment_negative: "Problem / Defect",
+  ai_sentiment_neutral: "Normal / Standard",
+  ai_sentiment_positive: "Positive / Praise",
+  ai_suggested_solutions: "Suggested Knowledge Base Solutions",
+  ai_summary_label: "AI Summary",
+  only_staff_can_generate_ai_drafts: "Only support staff can generate AI drafts.",
 };
+
 
 
 

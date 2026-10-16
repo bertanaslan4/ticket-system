@@ -86,6 +86,10 @@ export interface Ticket {
   sla_first_response_breached?: boolean;
   sla_resolution_breached?: boolean;
   sla_status?: "on_track" | "at_risk" | "breached" | "met";
+  ai_suggested_severity?: "s1" | "s2" | "s3" | null;
+  ai_sentiment?: string | null;
+  ai_summary?: string | null;
+  ai_tags?: string | null;
   events?: TicketEvent[];
   targets?: User[];
   orgs?: Organization[];

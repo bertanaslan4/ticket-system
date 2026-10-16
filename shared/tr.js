@@ -631,7 +631,29 @@ export default {
   ticket_must_be_closed_to_rate: "Yalnızca kapatılmış destek istemleri değerlendirilebilir.",
   only_customer_can_rate_ticket: "Yalnızca müşteri bu istemi değerlendirebilir.",
   invalid_rating: "Lütfen 1 ile 5 arasında geçerli bir puan seçin.",
+  ai_copilot: "AI Copilot & Akıllı Asistan",
+  ai_triaging: "Yapay Zeka Triyajı",
+  ai_suggested_priority: "AI Önerilen Öncelik",
+  ai_suggested_type: "AI Önerilen Tür",
+  ai_detected_topics: "Tespit Edilen Konular",
+  ai_urgency_score: "Aciliyet Skoru",
+  ai_generate_draft: "Akıllı Yanıt Taslağı Oluştur",
+  ai_generating_draft: "Yanıt Taslağı Hazırlanıyor…",
+  ai_use_draft: "Taslağı Yanıta Aktar",
+  ai_draft_type_solution: "Çözüm Notu",
+  ai_draft_type_first_response: "İlk Yanıt & Karşılama",
+  ai_draft_type_clarification: "Ek Bilgi Talebi",
+  ai_apply_priority: "Önceliği Uygula",
+  ai_priority_applied: "Öncelik başarıyla güncellendi",
+  ai_sentiment_urgent: "Acil / Yüksek Risk",
+  ai_sentiment_negative: "Sorun / Hata Bildirimi",
+  ai_sentiment_neutral: "Normal / Standart",
+  ai_sentiment_positive: "Pozitif / Teşekkür",
+  ai_suggested_solutions: "Önerilen Bilgi Bankası Çözümleri",
+  ai_summary_label: "Yapay Zeka Özeti",
+  only_staff_can_generate_ai_drafts: "Yalnızca destek ekibi personeli yapay zeka taslağı üretebilir.",
 };
+
 
 
 
