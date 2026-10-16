@@ -8,10 +8,28 @@ import { useLanguage } from "../../i18n/index.js";
 import { Plus, ArrowLeft } from "lucide-react";
 
 import { tr, number } from "../../i18n/index.js";
-import LanguagePicker from "../../components/LanguagePicker";
+import { useState, useEffect } from "react";
+import { api } from "../../lib/api";
 
 export default function NewTicket({ user, busy, onSubmit, onCancel }: any) {
   useLanguage();
+  const [title, setTitle] = useState("");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (title.trim().length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    const t = setTimeout(() => {
+      api<any[]>(`/kb?q=${encodeURIComponent(title.trim())}`)
+        .then((res) => {
+          setSuggestions(Array.isArray(res) ? res.slice(0, 3) : []);
+        })
+        .catch(() => setSuggestions([]));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [title]);
   return (
     <>
       <button className="back" onClick={onCancel}>
@@ -56,9 +74,41 @@ export default function NewTicket({ user, busy, onSubmit, onCancel }: any) {
             minLength={3}
             maxLength={180}
             required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder={tr("briefly_summarize_your_request")}
           />
         </label>
+        {suggestions.length > 0 && (
+          <div
+            style={{
+              padding: "10px 14px",
+              backgroundColor: "rgba(59, 130, 246, 0.08)",
+              borderRadius: 8,
+              border: "1px solid rgba(59, 130, 246, 0.25)",
+              marginTop: 4,
+              marginBottom: 12,
+            }}
+          >
+            <strong style={{ fontSize: 13, color: "#60a5fa" }}>
+              💡 {tr("suggested_solutions")}
+            </strong>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 13 }}>
+              {suggestions.map((s) => (
+                <li key={s.id}>
+                  <a
+                    href={`/kb`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: "var(--accent-color, #38bdf8)" }}
+                  >
+                    {s.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <label>
           {tr("description")}
           <textarea

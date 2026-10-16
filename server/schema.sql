@@ -280,3 +280,22 @@ ALTER TABLE tenants ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
 ALTER TABLE tenants ADD COLUMN IF NOT EXISTS cancel_at_period_end BOOLEAN NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS tenants_stripe_customer_idx ON tenants(stripe_customer_id);
 CREATE INDEX IF NOT EXISTS tenants_stripe_subscription_idx ON tenants(stripe_subscription_id);
+
+-- Phase 7: Knowledge Base, Inbound Mail & Onboarding Checklist
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS onboarding_dismissed BOOLEAN NOT NULL DEFAULT false;
+
+CREATE TABLE IF NOT EXISTS knowledge_base (
+  id SERIAL PRIMARY KEY,
+  tenant_id INTEGER NOT NULL DEFAULT 1 REFERENCES tenants(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  content TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'general',
+  is_public BOOLEAN NOT NULL DEFAULT true,
+  view_count INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS knowledge_base_tenant_idx ON knowledge_base(tenant_id);
+CREATE INDEX IF NOT EXISTS knowledge_base_slug_idx ON knowledge_base(tenant_id, slug);
+CREATE INDEX IF NOT EXISTS knowledge_base_search_idx ON knowledge_base(tenant_id, is_public);

@@ -37,7 +37,7 @@ export function useManagement(view: "users" | "organizations") {
   const productsResult = useQuery({queryKey:['admin','products'],enabled:view==='organizations',queryFn:({signal})=>api<any[]>('/admin/products',undefined,signal)});
   const mutation = useMutation({
     mutationFn: (body: any) =>
-      api(`/admin/${view}${editing.id ? "/" + editing.id : ""}`, body),
+      api(`/admin/${view}${editing?.id ? "/" + editing.id : ""}`, body),
     onSuccess: async () => {
       setEditing(null);
       setSuccess("record_saved_successfully");
@@ -74,10 +74,13 @@ export function useManagement(view: "users" | "organizations") {
     const data: any = Object.fromEntries(new FormData(e.currentTarget));
     if (view === "users") {
       data.active = data.active === "on";
-      if (editing.id) data.org_id = editing.org_id;
+      if (editing?.id) data.org_id = editing.org_id;
     } else {
-      data.kind = editing.id ? editing.kind : kind;
-      if (kind === 'customer') data.support_chain = supportChain;
+      data.kind = editing?.id ? editing.kind : kind;
+      if (kind === 'customer') {
+        const cleanChain = supportChain.filter((id) => Number.isSafeInteger(id) && id > 0);
+        data.support_chain = cleanChain.length ? cleanChain : supportChain;
+      }
     }
     mutation.mutate(data);
   }

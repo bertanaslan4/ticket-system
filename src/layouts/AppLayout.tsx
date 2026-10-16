@@ -11,6 +11,7 @@ import {
   BarChart3,
   Cloud,
   UserRound,
+  BookOpen,
 } from "lucide-react";
 
 import { tr, locale } from "../i18n/index.js";
@@ -100,6 +101,13 @@ export default function AppLayout() {
             <Ticket size={18} />
             {tr("tickets")}
             <span>{ticketCount}</span>
+          </button>
+          <button
+            className={view === "kb" ? "active" : ""}
+            onClick={() => navigate("kb")}
+          >
+            <BookOpen size={18} />
+            {tr("knowledge_base")}
           </button>
           {user.role === "customer" && (
             <button

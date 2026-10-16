@@ -57,19 +57,27 @@ export default function ManagementPage({
           {tr(success)}
         </div>
       )}
-      {result.isPending || result.isError ? (
-        <QueryState result={result} />
-      ) : (
-        <>
-          {editing && (
-            <Modal title={editing.id ? tr("edit_record") : tr(view === "users" ? "add_user" : "add_company")} busy={busy} onClose={() => setEditing(null)}>
-            <form
-              className="form-panel admin-form"
-              onSubmit={save}
-              key={view + "-" + (editing.id || "new")}
-            >
-              {error && <div className="error" role="alert">{tr(error)}</div>}
-              <fieldset disabled={busy} className="form-fields">
+      {editing && (
+        <Modal
+          title={
+            editing.id
+              ? tr("edit_record")
+              : tr(view === "users" ? "add_user" : "add_company")
+          }
+          busy={busy}
+          onClose={() => setEditing(null)}
+        >
+          <form
+            className="form-panel admin-form"
+            onSubmit={save}
+            key={view + "-" + (editing.id || "new")}
+          >
+            {error && (
+              <div className="error" role="alert">
+                {tr(error)}
+              </div>
+            )}
+            <fieldset disabled={busy} className="form-fields">
               <div className="form-row">
                 <label>
                   {view === "users" ? tr("full_name") : tr("company_name")}
@@ -90,17 +98,23 @@ export default function ManagementPage({
                       maxLength={200}
                       defaultValue={editing.email || ""}
                     />
-                    <small className="hint">{tr("user_email_notifications_hint")}</small>
+                    <small className="hint">
+                      {tr("user_email_notifications_hint")}
+                    </small>
                   </label>
                 ) : (
                   <label>
                     {tr("company_type")}
                     <select
+                      name="kind"
                       value={kind}
                       disabled={!!editing.id}
                       onChange={(e) => setKind(e.target.value)}
                     >
-                      {Object.entries({ customer: 'customer', support: 'support_company' }).map(([k, v]) => (
+                      {Object.entries({
+                        customer: "customer",
+                        support: "support_company",
+                      }).map(([k, v]) => (
                         <option key={k} value={k}>
                           {tr(v)}
                         </option>
@@ -231,14 +245,18 @@ export default function ManagementPage({
                 </button>
               </div>
             </form>
-            </Modal>
-          )}
-          <section className="panel">
-            <div className="panel-title">
-              <h2>
-                {view === "users" ? tr("users") : tr("companies")}{" "}
-                <span>{view === "users" ? users.length : orgs.length}</span>
-              </h2>
+          </Modal>
+        )}
+
+      {result.isPending || result.isError ? (
+        <QueryState result={result} />
+      ) : (
+        <section className="panel">
+          <div className="panel-title">
+            <h2>
+              {view === "users" ? tr("users") : tr("companies")}{" "}
+              <span>{view === "users" ? users.length : orgs.length}</span>
+            </h2>
             </div>
             <div className="table-wrap">
               <table>
@@ -327,7 +345,6 @@ export default function ManagementPage({
               </table>
             </div>
           </section>
-        </>
       )}
     </>
   );

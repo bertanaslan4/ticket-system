@@ -23,6 +23,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useTickets } from "./tickets.api";
 import QueryState from "../../components/QueryState";
 import { paths } from "../../app/paths";
+import OnboardingChecklist from "../dashboard/OnboardingChecklist";
 export default function TicketListPage({
   dashboard = false,
 }: {
@@ -95,6 +96,7 @@ export default function TicketListPage({
       </div>
       {view === "dashboard" && (
         <>
+          <OnboardingChecklist />
           <div className="stats">
             {[
               [

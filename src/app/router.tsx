@@ -67,6 +67,7 @@ export const routes: RouteObject[] = [
           { index: true, element: <Navigate to="/dashboard" replace /> },
           { path: "dashboard", element: <TicketListPage dashboard /> },
           { path: "tickets", element: <TicketListPage /> },
+          { path: "kb", lazy: async () => ({ Component: (await import('../features/kb/KnowledgeBasePage')).default }) },
           { path: "profile", lazy: async () => ({ Component: (await import('../features/profile/ProfilePage')).default }) },
           {
             element: <ProtectedRoute roles={["customer"]} />,
