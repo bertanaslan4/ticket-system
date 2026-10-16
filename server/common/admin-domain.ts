@@ -22,6 +22,6 @@ export const email = (v) => {
 };
 export const audit = (tx, u, action, id, details) =>
   tx.query(
-    "INSERT INTO admin_audit(actor_id,action,target_id,details) VALUES($1,$2,$3,$4)",
-    [u.id, action, id, JSON.stringify(details)],
+    "INSERT INTO admin_audit(tenant_id,actor_id,action,target_id,details) VALUES($1,$2,$3,$4,$5)",
+    [u.tenant_id || 1, u.id, action, id, JSON.stringify(details)],
   );

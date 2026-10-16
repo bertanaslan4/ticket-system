@@ -10,6 +10,7 @@ import { ReportsModule } from "./reports/reports.module.js";
 import { AuditModule } from "./audit/audit.module.js";
 import { HealthController } from "./health.controller.js";
 import { ProductsModule } from './products/products.module.js';
+import { TenantsModule } from './tenants/tenants.module.js';
 @Module({})
 export class AppModule {
   static register(db: any): DynamicModule {
@@ -23,6 +24,7 @@ export class AppModule {
         TicketsModule,
         OrganizationsModule,
         ProductsModule,
+        TenantsModule,
         UsersModule,
         ReportsModule,
         AuditModule,

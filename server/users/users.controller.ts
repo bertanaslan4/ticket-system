@@ -15,8 +15,8 @@ import { AdminGuard } from "../auth/admin.guard.js";
 @UseGuards(AdminGuard)
 export class UsersController {
   constructor(private readonly service: UsersService) {}
-  @Get() list() {
-    return this.service.list();
+  @Get() list(@Req() req: any) {
+    return this.service.list(req.user);
   }
   @Post(":id/delete") @HttpCode(200) remove(@Param("id") id: string, @Req() req: any) {
     return this.service.remove(id, req.user);

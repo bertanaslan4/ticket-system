@@ -77,6 +77,25 @@ beforeEach(() => {
       else if (path === '/api/admin/storage') data={provider:'local',account:'',bucket:'',hasCredentials:false,version:0,checked_at:null,usage:[],uptime_seconds:120};
       else if(path==='/api/admin/storage/test') data={ok:true,latency_ms:12,checked_at:'2026-10-08T12:00:00Z'};
       else if (path === "/api/admin/audit") data = [];
+      else if (path === "/api/admin/tenants")
+        data = [
+          {
+            id: 1,
+            slug: "bekatos",
+            name: "Bekatos",
+            plan_tier: "enterprise",
+            status: "active",
+            agent_limit: 500,
+            agent_used: 3,
+            customer_users_count: 5,
+            org_count: 4,
+            ticket_count: 10,
+            storage_limit_mb: 256000,
+            storage_used_bytes: 1048576,
+            trial_ends_at: null,
+            created_at: "2026-10-07T12:00:00Z",
+          },
+        ];
       return new Response(JSON.stringify(data), {
         status,
         headers: { "Content-Type": "application/json" },
@@ -295,5 +314,29 @@ describe("Feature routes", () => {
     fireEvent.submit(screen.getByLabelText('Şifre').closest('form')!);
     await waitFor(() => expect(router.state.location.pathname).toBe('/dashboard'));
     expect(calls.some(c => c.startsWith('/api/admin/'))).toBe(false);
+  });
+  it("renders tenant subscriptions and submits new workspace creation", async () => {
+    mount("/admin/tenants");
+    await screen.findByRole("heading", { name: tr("tenants") });
+    fireEvent.click(screen.getByRole("button", { name: tr("add_tenant") }));
+    fireEvent.change(screen.getByLabelText(tr("tenant_name")), {
+      target: { value: "Verimsoft Bulut" },
+    });
+    fireEvent.change(screen.getByLabelText(tr("tenant_slug")), {
+      target: { value: "verimsoft-bulut" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: tr("save") }));
+    await waitFor(() => {
+      const call = vi
+        .mocked(fetch)
+        .mock.calls.find(
+          ([url, init]) =>
+            String(url) === "/api/admin/tenants" && init?.method === "POST",
+        );
+      expect(call).toBeTruthy();
+      const body = JSON.parse(String(call?.[1]?.body));
+      expect(body.name).toBe("Verimsoft Bulut");
+      expect(body.slug).toBe("verimsoft-bulut");
+    });
   });
 });

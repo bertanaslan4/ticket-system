@@ -6,14 +6,16 @@ import { integer, option } from "../common/admin-domain.js";
 @Injectable()
 export class ReportsService {
   constructor(private readonly database: DatabaseService) {}
-  async list(query: any): Promise<any> {
+  async list(query: any, user?: any): Promise<any> {
     const db = this.database;
+    const tenantId = user?.tenant_id || 1;
     const clauses = [],
       params = [];
     const add = (sql, v) => {
       params.push(v);
       clauses.push(sql.replace("?", `$${params.length}`));
     };
+    add("t.tenant_id=?", tenantId);
     for (const key of ["from", "to"])
       if (query[key]) {
         const v = String(query[key]);
@@ -49,7 +51,7 @@ export class ReportsService {
         params,
       )
     ).rows;
-    const products = (await db.query('SELECT id,name FROM products ORDER BY name,id')).rows;
+    const products = (await db.query('SELECT id,name FROM products WHERE tenant_id=$1 ORDER BY name,id', [tenantId])).rows;
     const byProduct = products.filter(p => !query.product_id || p.id === Number(query.product_id)).map(p => {
       const matching = rows.filter(r => r.product_id === p.id);
       return {id:p.id,name:p.name,count:matching.length,open:matching.filter(r => r.status !== 'closed').length,closed:matching.filter(r => r.status === 'closed').length};

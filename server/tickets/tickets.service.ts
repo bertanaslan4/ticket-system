@@ -6,6 +6,7 @@ import { fail, text, choice, userSql } from "../common/domain.js";
 import { translate } from "../../shared/i18n.js";
 import { customerContactRole, isCustomerContact, adjacentSupportCompanies, previousSupportCompany } from '../../shared/support-flow.js';
 function access(u, t) {
+  if ((t.tenant_id || 1) !== (u.tenant_id || 1)) return false;
   if (u.role === "super_admin") return true;
   if (t.support_chain?.length) return u.role === 'customer'
     ? t.customer_id === u.org_id
@@ -65,6 +66,23 @@ export class TicketsService {
     }
   }
   async attach(tx: any, t: any, eventId: any, items: any[]) {
+    if (items.length) {
+      const tenantId = t.tenant_id || 1;
+      const tenant = (
+        await tx.query("SELECT storage_limit_mb FROM tenants WHERE id=$1", [tenantId])
+      ).rows[0];
+      const usedBytes = Number(
+        (
+          await tx.query(
+            "SELECT COALESCE(SUM(a.size),0) total FROM attachments a JOIN tickets tk ON tk.id=a.ticket_id WHERE tk.tenant_id=$1",
+            [tenantId],
+          )
+        ).rows[0].total,
+      );
+      const addedBytes = items.reduce((sum, a) => sum + Number(a.size || 0), 0);
+      if (usedBytes + addedBytes > (tenant?.storage_limit_mb ?? 256000) * 1024 * 1024)
+        fail(413, "tenant_storage_quota_exceeded", { limit_mb: tenant?.storage_limit_mb ?? 10240 });
+    }
     for (const a of items)
       await tx.query(
         "INSERT INTO attachments(id,ticket_id,event_id,name,size,storage,object_key) VALUES($1,$2,$3,$4,$5,$6,$7)",
@@ -85,6 +103,7 @@ export class TicketsService {
   async list(user: any): Promise<any> {
     const db = this.database;
     const u = user;
+    const tenantId = u.tenant_id || 1;
     const legacyFilter =
       u.role === "customer"
         ? "t.customer_id=$1"
@@ -97,8 +116,8 @@ export class TicketsService {
       : `(t.support_chain IS NOT NULL AND $1=ANY(t.support_chain) AND $1=ANY(t.visible_support_org_ids)) OR (t.support_chain IS NULL AND (${legacyFilter}))`;
     return (
       await db.query(
-        `SELECT t.*,c.name customer_name,o.name owner_name,a.name assignee_name FROM tickets t JOIN organizations c ON c.id=t.customer_id JOIN organizations o ON o.id=t.owner_org_id LEFT JOIN users a ON a.id=t.assignee_id WHERE ${filter} ORDER BY t.updated_at DESC,t.id DESC`,
-        u.role === "super_admin" ? [] : [u.org_id],
+        `SELECT t.*,c.name customer_name,o.name owner_name,a.name assignee_name FROM tickets t JOIN organizations c ON c.id=t.customer_id JOIN organizations o ON o.id=t.owner_org_id LEFT JOIN users a ON a.id=t.assignee_id WHERE t.tenant_id=${u.role === "super_admin" ? "$1" : "$2"} AND (${filter}) ORDER BY t.updated_at DESC,t.id DESC`,
+        u.role === "super_admin" ? [tenantId] : [u.org_id, tenantId],
       )
     ).rows;
   }
@@ -191,7 +210,8 @@ export class TicketsService {
           u.org_id,
         ])
       ).rows[0];
-      const product = (await tx.query('SELECT id,name FROM products WHERE id=$1',[org.product_id])).rows[0];
+      const tenantId = org.tenant_id || u.tenant_id || 1;
+      const product = (await tx.query('SELECT id,name FROM products WHERE id=$1 AND tenant_id=$2',[org.product_id, tenantId])).rows[0];
       if (!product) fail(400,'customer_product_missing');
       org.program = product.name;
       const count = Number(
@@ -205,10 +225,10 @@ export class TicketsService {
       if (count >= org.daily_limit)
         fail(429, "you_have_reached_your_daily_ticket_limit_please_try");
       if (org.support_chain?.length) {
-        const companies = (await tx.query("SELECT id,name FROM organizations WHERE id=ANY($1::integer[]) AND kind IN ('support','dealer','contractor')", [org.support_chain])).rows;
+        const companies = (await tx.query("SELECT id,name FROM organizations WHERE id=ANY($1::integer[]) AND tenant_id=$2 AND kind IN ('support','dealer','contractor')", [org.support_chain, tenantId])).rows;
         if (companies.length !== org.support_chain.length) fail(400, 'support_chain_invalid');
         const ownerId = org.support_chain[0];
-        const t = (await tx.query('INSERT INTO tickets(customer_id,created_by,program,title,description,type,severity,owner_org_id,support_chain,visible_support_org_ids) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *', [org.id,u.id,org.program,title,description,type,severity,ownerId,org.support_chain,[ownerId]])).rows[0];
+        const t = (await tx.query('INSERT INTO tickets(tenant_id,customer_id,created_by,program,title,description,type,severity,owner_org_id,support_chain,visible_support_org_ids) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *', [tenantId,org.id,u.id,org.program,title,description,type,severity,ownerId,org.support_chain,[ownerId]])).rows[0];
         await tx.query('UPDATE tickets SET product_id=$1 WHERE id=$2',[product.id,t.id]);
         t.product_id = product.id;
         const created = await event(tx,t,u,'created',{key:'event_ticket_created',params:{company:companies.find(c => c.id === ownerId).name}});
@@ -218,7 +238,7 @@ export class TicketsService {
         return t;
       }
       const flow = org.support_flow || 'dealer_first';
-      const contractors = (await tx.query("SELECT id,name FROM organizations WHERE kind='contractor' ORDER BY id")).rows;
+      const contractors = (await tx.query("SELECT id,name FROM organizations WHERE kind='contractor' AND tenant_id=$1 ORDER BY id", [tenantId])).rows;
       const contractor = contractors.find(c => ['bekatos', 'takipsan'].includes(c.name.toLowerCase())) || (contractors.length === 1 ? contractors[0] : contractors[0]);
       if (!contractor) fail(400, 'support_contractor_missing');
       const dealerId = flow === 'contractor_only' ? null : org.dealer_id;
@@ -226,8 +246,9 @@ export class TicketsService {
       if (!ownerId || (flow !== 'contractor_only' && !dealerId)) fail(400, 'select_a_valid_dealer');
       const t = (
         await tx.query(
-          "INSERT INTO tickets(customer_id,dealer_id,created_by,program,title,description,type,severity,owner_org_id,support_flow,contractor_id,escalated,dealer_involved) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *",
+          "INSERT INTO tickets(tenant_id,customer_id,dealer_id,created_by,program,title,description,type,severity,owner_org_id,support_flow,contractor_id,escalated,dealer_involved) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *",
           [
+            tenantId,
             org.id,
             dealerId,
             u.id,

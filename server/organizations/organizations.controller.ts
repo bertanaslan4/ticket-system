@@ -15,8 +15,8 @@ import { AdminGuard } from "../auth/admin.guard.js";
 @UseGuards(AdminGuard)
 export class OrganizationsController {
   constructor(private readonly service: OrganizationsService) {}
-  @Get() list() {
-    return this.service.list();
+  @Get() list(@Req() req: any) {
+    return this.service.list(req.user);
   }
   @Post() create(@Body() body: any, @Req() req: any) {
     return this.service.save(undefined, body, req.user);

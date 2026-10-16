@@ -90,6 +90,13 @@ export const routes: RouteObject[] = [
           {
             element: <ProtectedRoute roles={["super_admin"]} />,
             children: [
+              {
+                path: "admin/tenants",
+                lazy: async () => ({
+                  Component: (await import("../features/tenants/TenantsPage"))
+                    .default,
+                }),
+              },
               {path:'admin/products',lazy:async()=>({Component:(await import('../features/products/ProductsPage')).default})},
               {path:'admin/product-reports',lazy:async()=>({Component:(await import('../features/reports/ReportsPage')).ProductReportsPage})},
               {

@@ -21,7 +21,7 @@ export async function importDealerUsers(db, company, accounts, password) {
   });
   return db.transaction(async tx => {
     await tx.query('LOCK TABLE organizations, users IN SHARE ROW EXCLUSIVE MODE');
-    const orgs = (await tx.query("SELECT id FROM organizations WHERE lower(name)=lower($1) AND kind='dealer'", [company])).rows;
+    const orgs = (await tx.query("SELECT id,COALESCE(tenant_id,1) tenant_id FROM organizations WHERE lower(name)=lower($1) AND kind='dealer'", [company])).rows;
     if (orgs.length !== 1) throw new Error('Exactly one matching dealer company must exist.');
     const results = [];
     for (const account of normalized) {
@@ -32,8 +32,8 @@ export async function importDealerUsers(db, company, accounts, password) {
         results.push({ email: account.email, status: 'exists_unchanged' });
         continue;
       }
-      await tx.query("INSERT INTO users(org_id,name,email,password_hash,system_role,active) VALUES($1,$2,$3,$4,'member',true)",
-        [orgs[0].id, account.name, account.email, hashPassword(password)]);
+      await tx.query("INSERT INTO users(tenant_id,org_id,name,email,password_hash,system_role,active) VALUES($1,$2,$3,$4,$5,'member',true)",
+        [orgs[0].tenant_id, orgs[0].id, account.name, account.email, hashPassword(password)]);
       results.push({ email: account.email, status: 'created' });
     }
     return results;

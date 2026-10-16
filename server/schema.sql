@@ -93,3 +93,32 @@ SELECT min(btrim(program)) FROM (
 GROUP BY lower(btrim(program)) ON CONFLICT DO NOTHING;
 UPDATE organizations o SET product_id=p.id FROM products p WHERE o.product_id IS NULL AND lower(btrim(o.program))=lower(btrim(p.name));
 UPDATE tickets t SET product_id=p.id FROM products p WHERE t.product_id IS NULL AND lower(btrim(t.program))=lower(btrim(p.name));
+
+-- Multi-tenant SaaS isolation and subscription quotas.
+CREATE TABLE IF NOT EXISTS tenants (
+ id SERIAL PRIMARY KEY,
+ slug TEXT NOT NULL UNIQUE,
+ name TEXT NOT NULL,
+ plan_tier TEXT NOT NULL DEFAULT 'starter' CHECK(plan_tier IN ('starter','pro','enterprise')),
+ status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('trial','active','past_due','suspended')),
+ agent_limit INTEGER NOT NULL DEFAULT 5 CHECK(agent_limit > 0),
+ storage_limit_mb INTEGER NOT NULL DEFAULT 10240 CHECK(storage_limit_mb > 0),
+ trial_ends_at TIMESTAMPTZ,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO tenants(id, slug, name, plan_tier, status, agent_limit, storage_limit_mb)
+VALUES (1, 'bekatos', 'Bekatos', 'enterprise', 'active', 500, 256000)
+ON CONFLICT (id) DO NOTHING;
+SELECT setval(pg_get_serial_sequence('tenants','id'), GREATEST((SELECT coalesce(max(id),1) FROM tenants), 1));
+
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS tenant_id INTEGER NOT NULL DEFAULT 1 REFERENCES tenants(id);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS tenant_id INTEGER NOT NULL DEFAULT 1 REFERENCES tenants(id);
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS tenant_id INTEGER NOT NULL DEFAULT 1 REFERENCES tenants(id);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS tenant_id INTEGER NOT NULL DEFAULT 1 REFERENCES tenants(id);
+ALTER TABLE admin_audit ADD COLUMN IF NOT EXISTS tenant_id INTEGER NOT NULL DEFAULT 1 REFERENCES tenants(id);
+
+DROP INDEX IF EXISTS products_name_unique;
+CREATE UNIQUE INDEX IF NOT EXISTS products_tenant_name_unique ON products(tenant_id, lower(btrim(name)));
+CREATE INDEX IF NOT EXISTS organizations_tenant_idx ON organizations(tenant_id, id);
+CREATE INDEX IF NOT EXISTS users_tenant_idx ON users(tenant_id, id);
+CREATE INDEX IF NOT EXISTS tickets_tenant_idx ON tickets(tenant_id, updated_at DESC, id DESC);

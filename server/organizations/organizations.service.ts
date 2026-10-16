@@ -8,11 +8,13 @@ import { supportFlows } from '../../shared/support-flow.js';
 @Injectable()
 export class OrganizationsService {
   constructor(private readonly database: DatabaseService) {}
-  async list(): Promise<any> {
+  async list(user?: any): Promise<any> {
     const db = this.database;
+    const tenantId = user?.tenant_id || 1;
     const rows = (
       await db.query(
-        `SELECT o.*,d.name dealer_name,(SELECT count(*)::int FROM users u WHERE u.org_id=o.id) user_count FROM organizations o LEFT JOIN organizations d ON d.id=o.dealer_id ORDER BY o.id`,
+        `SELECT o.*,d.name dealer_name,(SELECT count(*)::int FROM users u WHERE u.org_id=o.id AND u.deleted_at IS NULL) user_count FROM organizations o LEFT JOIN organizations d ON d.id=o.dealer_id WHERE o.tenant_id=$1 ORDER BY o.id`,
+        [tenantId],
       )
     ).rows;
     const contractors = rows.filter(o => o.kind === 'contractor');
@@ -23,6 +25,7 @@ export class OrganizationsService {
   }
   async save(routeId: string | undefined, body: any, user: any): Promise<any> {
     const db = this.database;
+    const tenantId = user?.tenant_id || 1;
     const b = body,
       name = str(b.name),
       id = routeId ? integer(routeId) : null;
@@ -30,8 +33,8 @@ export class OrganizationsService {
       const old = id
         ? (
             await tx.query(
-              "SELECT * FROM organizations WHERE id=$1 FOR UPDATE",
-              [id],
+              "SELECT * FROM organizations WHERE id=$1 AND tenant_id=$2 FOR UPDATE",
+              [id, tenantId],
             )
           ).rows[0]
         : null;
@@ -44,7 +47,7 @@ export class OrganizationsService {
       if (chain !== null) {
         if (!Array.isArray(chain) || !chain.length || chain.some(v => !Number.isSafeInteger(v) || v <= 0) || new Set(chain).size !== chain.length)
           fail(400, 'support_chain_invalid');
-        const valid = (await tx.query("SELECT id FROM organizations WHERE id=ANY($1::integer[]) AND kind IN ('support','dealer','contractor')", [chain])).rows;
+        const valid = (await tx.query("SELECT id FROM organizations WHERE id=ANY($1::integer[]) AND tenant_id=$2 AND kind IN ('support','dealer','contractor')", [chain, tenantId])).rows;
         if (valid.length !== chain.length) fail(400, 'support_chain_invalid');
       }
       if (kind === 'customer' && !old && chain === null && b.support_flow === undefined && b.dealer_id === undefined)
@@ -54,8 +57,8 @@ export class OrganizationsService {
         legacyProgram = kind === "customer" && b.product_id === undefined ? str(b.program ?? old?.program) : null,
         limit = kind === "customer" ? integer(b.daily_limit) : 10;
       const product = kind === 'customer' ? (await tx.query(
-        b.product_id !== undefined ? 'SELECT * FROM products WHERE id=$1' : 'SELECT * FROM products WHERE lower(btrim(name))=lower(btrim($1))',
-        [b.product_id !== undefined ? integer(b.product_id) : legacyProgram],
+        b.product_id !== undefined ? 'SELECT * FROM products WHERE id=$1 AND tenant_id=$2' : 'SELECT * FROM products WHERE lower(btrim(name))=lower(btrim($1)) AND tenant_id=$2',
+        [b.product_id !== undefined ? integer(b.product_id) : legacyProgram, tenantId],
       )).rows[0] : null;
       if (kind === 'customer' && !product) fail(400,'select_valid_product');
       const program = product?.name ?? null;
@@ -64,8 +67,8 @@ export class OrganizationsService {
         dealer &&
         !(
           await tx.query(
-            "SELECT id FROM organizations WHERE id=$1 AND kind='dealer'",
-            [dealer],
+            "SELECT id FROM organizations WHERE id=$1 AND tenant_id=$2 AND kind='dealer'",
+            [dealer, tenantId],
           )
         ).rows.length
       )
@@ -73,8 +76,8 @@ export class OrganizationsService {
       if (
         (
           await tx.query(
-            "SELECT id FROM organizations WHERE lower(name)=lower($1) AND id<>$2",
-            [name, id || 0],
+            "SELECT id FROM organizations WHERE tenant_id=$1 AND lower(name)=lower($2) AND id<>$3",
+            [tenantId, name, id || 0],
           )
         ).rows.length
       )
@@ -82,11 +85,11 @@ export class OrganizationsService {
       const row = (
         await tx.query(
           id
-            ? "UPDATE organizations SET name=$1,kind=$2,dealer_id=$3,program=$4,daily_limit=$5,support_flow=$6 WHERE id=$7 RETURNING *"
-            : "INSERT INTO organizations(name,kind,dealer_id,program,daily_limit,support_flow) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",
+            ? "UPDATE organizations SET name=$1,kind=$2,dealer_id=$3,program=$4,daily_limit=$5,support_flow=$6 WHERE id=$7 AND tenant_id=$8 RETURNING *"
+            : "INSERT INTO organizations(tenant_id,name,kind,dealer_id,program,daily_limit,support_flow) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *",
           id
-            ? [name, kind, dealer, program, limit, flow, id]
-            : [name, kind, dealer, program, limit, flow],
+            ? [name, kind, dealer, program, limit, flow, id, tenantId]
+            : [tenantId, name, kind, dealer, program, limit, flow],
         )
       ).rows[0];
       await audit(

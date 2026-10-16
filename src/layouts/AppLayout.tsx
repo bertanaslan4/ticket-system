@@ -66,6 +66,7 @@ export default function AppLayout() {
           <button className={view === 'profile' ? 'active' : ''} onClick={() => navigate('profile')}><UserRound size={18} />{tr('my_profile')}</button>
           {user.role === "super_admin" &&
             [
+              ["tenants", tr("tenants"), Building2],
               ["organizations", tr("companies"), Building2],
               ["products", tr("products"), Building2],
               ["users", tr("users"), Users],
@@ -142,6 +143,7 @@ export default function AppLayout() {
             <b>/</b>{" "}
             <strong>
               {[
+                "tenants",
                 "organizations",
                 "products",
                 "productReports",

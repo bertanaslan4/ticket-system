@@ -15,7 +15,7 @@ import { AdminGuard } from "../auth/admin.guard.js";
 @UseGuards(AdminGuard)
 export class ReportsController {
   constructor(private readonly service: ReportsService) {}
-  @Get() list(@Query() query: any) {
-    return this.service.list(query);
+  @Get() list(@Query() query: any, @Req() req: any) {
+    return this.service.list(query, req.user);
   }
 }

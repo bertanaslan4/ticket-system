@@ -27,7 +27,7 @@ export class AuthService {
     const email = text(body.email, 3, 200).toLowerCase(),
       password = text(body.password, 1, 200);
     const found = (
-      await db.query("SELECT * FROM users WHERE email=$1", [email])
+      await db.query("SELECT u.*,t.status tenant_status FROM users u JOIN tenants t ON t.id=u.tenant_id WHERE u.email=$1", [email])
     ).rows[0];
     if (
       !found ||
@@ -35,6 +35,8 @@ export class AuthService {
       !verifyPassword(password, found.password_hash)
     )
       fail(401, "incorrect_email_or_password");
+    if (found.tenant_status === "suspended")
+      fail(403, "tenant_account_suspended");
     const token = newToken();
     await db.query(
       "INSERT INTO sessions VALUES($1,$2,now()+interval '8 hours')",
@@ -72,6 +74,7 @@ export class AuthService {
       )
     ).rows[0];
     if (!user) fail(401, "your_session_has_expired");
+    if (user.tenant_status === "suspended") fail(403, "tenant_account_suspended");
     return { user, token };
   }
 }

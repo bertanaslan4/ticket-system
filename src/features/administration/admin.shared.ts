@@ -12,6 +12,8 @@ export const states = {
   closed: "closed",
 };
 export const auditLabels = {
+  tenant_created: "tenant_created",
+  tenant_updated: "tenant_updated",
   product_created: 'product_created',
   product_updated: 'product_updated',
   storage_settings_updated: "storage_settings_updated",

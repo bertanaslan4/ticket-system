@@ -10,6 +10,7 @@ export const paths: Record<string, string> = {
   productReports: "/admin/product-reports",
   storage: "/admin/storage",
   audit: "/admin/audit",
+  tenants: "/admin/tenants",
 };
 export function viewForPath(path: string) {
   return (

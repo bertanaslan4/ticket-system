@@ -11,10 +11,32 @@ export interface User {
   email: string;
   org_id: number;
   org_name: string;
+  tenant_id?: number;
+  tenant_name?: string;
+  tenant_slug?: string;
+  plan_tier?: "starter" | "pro" | "enterprise";
+  tenant_status?: "trial" | "active" | "past_due" | "suspended";
+  agent_limit?: number;
+  storage_limit_mb?: number;
   role: Role;
   program: string;
   daily_limit: number;
   used: number;
+}
+export interface Tenant {
+  id: number;
+  slug: string;
+  name: string;
+  plan_tier: "starter" | "pro" | "enterprise";
+  status: "trial" | "active" | "past_due" | "suspended";
+  agent_limit: number;
+  agent_used: number;
+  customer_user_count: number;
+  storage_limit_mb: number;
+  storage_used_bytes: number;
+  organization_count: number;
+  ticket_count: number;
+  created_at: string;
 }
 export interface Ticket {
   product_id?: number;
