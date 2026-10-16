@@ -133,6 +133,10 @@ export class TenantsService {
       ).rows[0];
 
       if (!id) {
+        await tx.query(
+          "INSERT INTO sla_policies(tenant_id, severity, first_response_target_minutes, resolution_target_minutes) VALUES ($1,'s1',60,240),($1,'s2',240,1440),($1,'s3',480,2880) ON CONFLICT (tenant_id, severity) DO NOTHING",
+          [row.id],
+        );
         const contractorOrg = (
           await tx.query(
             "INSERT INTO organizations(tenant_id,name,kind,daily_limit) VALUES($1,$2,'contractor',10) RETURNING id",

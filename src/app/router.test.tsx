@@ -96,6 +96,39 @@ beforeEach(() => {
             created_at: "2026-10-07T12:00:00Z",
           },
         ];
+      else if (path === "/api/admin/sla")
+        data = {
+          policies: [
+            {
+              severity: "s1",
+              first_response_target_minutes: 60,
+              resolution_target_minutes: 240,
+            },
+            {
+              severity: "s2",
+              first_response_target_minutes: 240,
+              resolution_target_minutes: 1440,
+            },
+            {
+              severity: "s3",
+              first_response_target_minutes: 480,
+              resolution_target_minutes: 2880,
+            },
+          ],
+          summary: {
+            total_tickets: 10,
+            first_response_breached: 0,
+            resolution_breached: 0,
+            breached_total: 0,
+            at_risk: 1,
+            compliance_rate: 100,
+          },
+        };
+      else if (path === "/api/admin/operations/outbox")
+        data = {
+          rows: [],
+          counts: { total: 0, sent: 0, pending: 0, failed: 0, skipped: 0 },
+        };
       return new Response(JSON.stringify(data), {
         status,
         headers: { "Content-Type": "application/json" },
@@ -337,6 +370,28 @@ describe("Feature routes", () => {
       const body = JSON.parse(String(call?.[1]?.body));
       expect(body.name).toBe("Verimsoft Bulut");
       expect(body.slug).toBe("verimsoft-bulut");
+    });
+  });
+  it("renders SLA policies and saves updated target minutes", async () => {
+    mount("/admin/operations");
+    await screen.findByRole("heading", { name: tr("operations") });
+    fireEvent.change(
+      screen.getByLabelText(`S1 ${tr("sla_first_response_target")}`),
+      { target: { value: "45" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: tr("save_sla_policies") }),
+    );
+    await waitFor(() => {
+      const call = vi
+        .mocked(fetch)
+        .mock.calls.find(
+          ([url, init]) =>
+            String(url) === "/api/admin/sla" && init?.method === "POST",
+        );
+      expect(call).toBeTruthy();
+      const body = JSON.parse(String(call?.[1]?.body));
+      expect(body.policies[0].first_response_target_minutes).toBe(45);
     });
   });
 });

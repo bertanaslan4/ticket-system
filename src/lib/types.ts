@@ -63,6 +63,13 @@ export interface Ticket {
   program: string;
   created_at: string;
   updated_at: string;
+  first_responded_at?: string | null;
+  closed_at?: string | null;
+  sla_first_response_due_at?: string | null;
+  sla_resolution_due_at?: string | null;
+  sla_first_response_breached?: boolean;
+  sla_resolution_breached?: boolean;
+  sla_status?: "on_track" | "at_risk" | "breached" | "met";
   events?: TicketEvent[];
   targets?: User[];
   orgs?: Organization[];

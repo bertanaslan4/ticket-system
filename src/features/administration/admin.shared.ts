@@ -14,6 +14,9 @@ export const states = {
 export const auditLabels = {
   tenant_created: "tenant_created",
   tenant_updated: "tenant_updated",
+  sla_updated: "sla_updated",
+  mail_outbox_retried: "mail_outbox_retried",
+  workspace_exported: "workspace_exported",
   product_created: 'product_created',
   product_updated: 'product_updated',
   storage_settings_updated: "storage_settings_updated",

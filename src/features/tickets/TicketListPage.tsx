@@ -258,6 +258,19 @@ export default function TicketListPage({
                   </td>
                   <td>
                     <Badge value={t.severity} />
+                    {t.sla_status && (
+                      <small style={{ display: "block", marginTop: 4 }}>
+                        {tr(
+                          t.sla_status === "breached"
+                            ? "sla_breached"
+                            : t.sla_status === "at_risk"
+                              ? "sla_at_risk"
+                              : t.sla_status === "met"
+                                ? "sla_met"
+                                : "sla_on_track",
+                        )}
+                      </small>
+                    )}
                   </td>
                   <td>
                     <span className="team-name">{t.owner_name}</span>

@@ -122,3 +122,60 @@ CREATE UNIQUE INDEX IF NOT EXISTS products_tenant_name_unique ON products(tenant
 CREATE INDEX IF NOT EXISTS organizations_tenant_idx ON organizations(tenant_id, id);
 CREATE INDEX IF NOT EXISTS users_tenant_idx ON users(tenant_id, id);
 CREATE INDEX IF NOT EXISTS tickets_tenant_idx ON tickets(tenant_id, updated_at DESC, id DESC);
+
+-- Phase 2: SLA Policies and Ticket SLA Tracking
+CREATE TABLE IF NOT EXISTS sla_policies (
+ id SERIAL PRIMARY KEY,
+ tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+ severity TEXT NOT NULL CHECK(severity IN ('s1','s2','s3')),
+ first_response_target_minutes INTEGER NOT NULL CHECK(first_response_target_minutes > 0),
+ resolution_target_minutes INTEGER NOT NULL CHECK(resolution_target_minutes > 0),
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ UNIQUE(tenant_id, severity)
+);
+
+INSERT INTO sla_policies(tenant_id, severity, first_response_target_minutes, resolution_target_minutes)
+SELECT t.id, v.severity, v.first_resp, v.res_target
+FROM tenants t
+CROSS JOIN (
+ VALUES ('s1', 60, 240), ('s2', 240, 1440), ('s3', 480, 2880)
+) AS v(severity, first_resp, res_target)
+ON CONFLICT (tenant_id, severity) DO NOTHING;
+
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS first_responded_at TIMESTAMPTZ;
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS closed_at TIMESTAMPTZ;
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS sla_first_response_due_at TIMESTAMPTZ;
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS sla_resolution_due_at TIMESTAMPTZ;
+
+-- Backfill SLA due timestamps and response/closed timestamps on existing tickets
+UPDATE tickets t
+SET
+ sla_first_response_due_at = COALESCE(t.sla_first_response_due_at, t.created_at + make_interval(mins => COALESCE(sp.first_response_target_minutes, 240))),
+ sla_resolution_due_at = COALESCE(t.sla_resolution_due_at, t.created_at + make_interval(mins => COALESCE(sp.resolution_target_minutes, 1440)))
+FROM sla_policies sp
+WHERE sp.tenant_id = t.tenant_id AND sp.severity = t.severity
+  AND (t.sla_first_response_due_at IS NULL OR t.sla_resolution_due_at IS NULL);
+
+UPDATE tickets t
+SET closed_at = sub.closed_at
+FROM (
+ SELECT ticket_id, max(created_at) AS closed_at
+ FROM events
+ WHERE kind = 'closed'
+ GROUP BY ticket_id
+) sub
+WHERE t.id = sub.ticket_id AND t.status = 'closed' AND t.closed_at IS NULL;
+
+UPDATE tickets t
+SET first_responded_at = sub.first_at
+FROM (
+ SELECT e.ticket_id, min(e.created_at) AS first_at
+ FROM events e
+ JOIN users u ON u.id = e.actor_id
+ JOIN organizations o ON o.id = u.org_id
+ WHERE e.kind IN ('comment', 'assigned', 'resolved', 'resolution', 'closed')
+   AND o.kind <> 'customer'
+ GROUP BY e.ticket_id
+) sub
+WHERE t.id = sub.ticket_id AND t.first_responded_at IS NULL;
+

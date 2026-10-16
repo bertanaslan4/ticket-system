@@ -86,6 +86,45 @@ export default function Detail({ ticket: t, user, busy, onAction, back }: any) {
               <dd>
                 <Badge value={t.severity} />
               </dd>
+              {t.sla_status && (
+                <>
+                  <dt>{tr("sla_status")}</dt>
+                  <dd>
+                    <span
+                      className={
+                        "badge " +
+                        (t.sla_status === "breached"
+                          ? "s1"
+                          : t.sla_status === "at_risk"
+                            ? "review"
+                            : "closed")
+                      }
+                    >
+                      {tr(
+                        t.sla_status === "breached"
+                          ? "sla_breached"
+                          : t.sla_status === "at_risk"
+                            ? "sla_at_risk"
+                            : t.sla_status === "met"
+                              ? "sla_met"
+                              : "sla_on_track",
+                      )}
+                    </span>
+                  </dd>
+                </>
+              )}
+              {t.sla_first_response_due_at && (
+                <>
+                  <dt>{tr("sla_first_response_due")}</dt>
+                  <dd>{date(t.sla_first_response_due_at)}</dd>
+                </>
+              )}
+              {t.sla_resolution_due_at && (
+                <>
+                  <dt>{tr("sla_resolution_due")}</dt>
+                  <dd>{date(t.sla_resolution_due_at)}</dd>
+                </>
+              )}
               <dt>{tr('support_chain')}</dt><dd>{t.support_chain ? t.support_companies?.map(o => o.name).join(' → ') : tr('flow_' + (t.support_flow || 'dealer_first'))}</dd>
               <dt>{tr("responsible_team_2")}</dt>
               <dd>{t.owner_name}</dd>

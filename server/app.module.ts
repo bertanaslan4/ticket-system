@@ -11,6 +11,7 @@ import { AuditModule } from "./audit/audit.module.js";
 import { HealthController } from "./health.controller.js";
 import { ProductsModule } from './products/products.module.js';
 import { TenantsModule } from './tenants/tenants.module.js';
+import { OperationsModule } from './operations/operations.module.js';
 @Module({})
 export class AppModule {
   static register(db: any): DynamicModule {
@@ -25,6 +26,7 @@ export class AppModule {
         OrganizationsModule,
         ProductsModule,
         TenantsModule,
+        OperationsModule,
         UsersModule,
         ReportsModule,
         AuditModule,

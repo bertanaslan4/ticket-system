@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service.js";
-import { fail, text, choice, userSql } from "../common/domain.js";
+import { fail, text, choice, userSql, enrichTicketSla } from "../common/domain.js";
 import { integer, option } from "../common/admin-domain.js";
 
 @Injectable()
@@ -47,10 +47,10 @@ export class ReportsService {
       if (query[key]) add(`t.${key}=?`, option(query[key], values));
     const rows = (
       await db.query(
-        `SELECT t.id,t.product_id,t.title,t.type,t.status,t.severity,t.program,t.created_at,t.updated_at,c.name customer_name,COALESCE(d.name,'—') dealer_name,o.name owner_name,u.name assignee_name,closed.closed_at,EXTRACT(EPOCH FROM (closed.closed_at-t.created_at))/3600 resolution_hours FROM tickets t JOIN organizations c ON c.id=t.customer_id LEFT JOIN organizations d ON d.id=COALESCE(t.support_chain[1],t.dealer_id) JOIN organizations o ON o.id=t.owner_org_id LEFT JOIN users u ON u.id=t.assignee_id LEFT JOIN LATERAL (SELECT max(created_at) closed_at FROM events WHERE ticket_id=t.id AND kind='closed') closed ON true ${clauses.length ? "WHERE " + clauses.join(" AND ") : ""} ORDER BY t.created_at DESC,t.id DESC`,
+        `SELECT t.id,t.product_id,t.title,t.type,t.status,t.severity,t.program,t.created_at,t.updated_at,t.first_responded_at,t.sla_first_response_due_at,t.sla_resolution_due_at,c.name customer_name,COALESCE(d.name,'—') dealer_name,o.name owner_name,u.name assignee_name,COALESCE(t.closed_at,closed.closed_at) closed_at,EXTRACT(EPOCH FROM (COALESCE(t.closed_at,closed.closed_at)-t.created_at))/3600 resolution_hours FROM tickets t JOIN organizations c ON c.id=t.customer_id LEFT JOIN organizations d ON d.id=COALESCE(t.support_chain[1],t.dealer_id) JOIN organizations o ON o.id=t.owner_org_id LEFT JOIN users u ON u.id=t.assignee_id LEFT JOIN LATERAL (SELECT max(created_at) closed_at FROM events WHERE ticket_id=t.id AND kind='closed') closed ON true ${clauses.length ? "WHERE " + clauses.join(" AND ") : ""} ORDER BY t.created_at DESC,t.id DESC`,
         params,
       )
-    ).rows;
+    ).rows.map((r) => enrichTicketSla(r));
     const products = (await db.query('SELECT id,name FROM products WHERE tenant_id=$1 ORDER BY name,id', [tenantId])).rows;
     const byProduct = products.filter(p => !query.product_id || p.id === Number(query.product_id)).map(p => {
       const matching = rows.filter(r => r.product_id === p.id);
@@ -66,11 +66,17 @@ export class ReportsService {
     const resolved = rows.filter(
       (r) => r.status === "closed" && r.resolution_hours !== null,
     );
+    const slaBreached = rows.filter((r) => r.sla_status === "breached").length;
+    const slaComplianceRate = rows.length
+      ? Math.round(((rows.length - slaBreached) / rows.length) * 100)
+      : 100;
     return {
       rows,
       total: rows.length,
       open: rows.filter((r) => r.status !== "closed").length,
       closed: rows.filter((r) => r.status === "closed").length,
+      slaBreached,
+      slaComplianceRate,
       averageResolutionHours: resolved.length
         ? resolved.reduce((n, r) => n + Number(r.resolution_hours), 0) /
           resolved.length

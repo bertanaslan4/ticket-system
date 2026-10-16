@@ -67,6 +67,7 @@ export default function AppLayout() {
           {user.role === "super_admin" &&
             [
               ["tenants", tr("tenants"), Building2],
+              ["operations", tr("operations"), ShieldCheck],
               ["organizations", tr("companies"), Building2],
               ["products", tr("products"), Building2],
               ["users", tr("users"), Users],
@@ -144,6 +145,7 @@ export default function AppLayout() {
             <strong>
               {[
                 "tenants",
+                "operations",
                 "organizations",
                 "products",
                 "productReports",

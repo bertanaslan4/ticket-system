@@ -97,6 +97,14 @@ export const routes: RouteObject[] = [
                     .default,
                 }),
               },
+              {
+                path: "admin/operations",
+                lazy: async () => ({
+                  Component: (
+                    await import("../features/operations/OperationsPage")
+                  ).default,
+                }),
+              },
               {path:'admin/products',lazy:async()=>({Component:(await import('../features/products/ProductsPage')).default})},
               {path:'admin/product-reports',lazy:async()=>({Component:(await import('../features/reports/ReportsPage')).ProductReportsPage})},
               {

@@ -2,7 +2,7 @@ import { MailService } from "../mail/mail.service.js";
 import { AttachmentStorage } from "./attachments.js";
 import { Injectable } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service.js";
-import { fail, text, choice, userSql } from "../common/domain.js";
+import { fail, text, choice, userSql, enrichTicketSla, applyTicketSlaTargets } from "../common/domain.js";
 import { translate } from "../../shared/i18n.js";
 import { customerContactRole, isCustomerContact, adjacentSupportCompanies, previousSupportCompany } from '../../shared/support-flow.js';
 function access(u, t) {
@@ -119,11 +119,11 @@ export class TicketsService {
         `SELECT t.*,c.name customer_name,o.name owner_name,a.name assignee_name FROM tickets t JOIN organizations c ON c.id=t.customer_id JOIN organizations o ON o.id=t.owner_org_id LEFT JOIN users a ON a.id=t.assignee_id WHERE t.tenant_id=${u.role === "super_admin" ? "$1" : "$2"} AND (${filter}) ORDER BY t.updated_at DESC,t.id DESC`,
         u.role === "super_admin" ? [tenantId] : [u.org_id, tenantId],
       )
-    ).rows;
+    ).rows.map((r) => enrichTicketSla(r));
   }
   async detail(id: string, user: any): Promise<any> {
     const db = this.database;
-    const t = await getTicket(db, id, user);
+    const t = enrichTicketSla(await getTicket(db, id, user));
     const events = (
       await db.query(
         `SELECT e.*,u.name actor_name,o.name org_name FROM events e JOIN users u ON u.id=e.actor_id JOIN organizations o ON o.id=u.org_id WHERE e.ticket_id=$1 ${user.role === "customer" ? "AND e.visibility='public'" : ""} ORDER BY e.id`,
@@ -231,11 +231,12 @@ export class TicketsService {
         const t = (await tx.query('INSERT INTO tickets(tenant_id,customer_id,created_by,program,title,description,type,severity,owner_org_id,support_chain,visible_support_org_ids) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *', [tenantId,org.id,u.id,org.program,title,description,type,severity,ownerId,org.support_chain,[ownerId]])).rows[0];
         await tx.query('UPDATE tickets SET product_id=$1 WHERE id=$2',[product.id,t.id]);
         t.product_id = product.id;
+        await applyTicketSlaTargets(tx, t);
         const created = await event(tx,t,u,'created',{key:'event_ticket_created',params:{company:companies.find(c => c.id === ownerId).name}});
         await this.attach(tx,t,null,items);
         const recipients = (await tx.query("SELECT id,name,email FROM users WHERE org_id=$1 AND active=true AND system_role='member'",[ownerId])).rows;
         await this.mail.enqueue(tx,created.rows[0].id,'assigned',t,recipients);
-        return t;
+        return enrichTicketSla(t);
       }
       const flow = org.support_flow || 'dealer_first';
       const contractors = (await tx.query("SELECT id,name FROM organizations WHERE kind='contractor' AND tenant_id=$1 ORDER BY id", [tenantId])).rows;
@@ -268,6 +269,7 @@ export class TicketsService {
       ).rows[0];
       await tx.query('UPDATE tickets SET product_id=$1 WHERE id=$2',[product.id,t.id]);
       t.product_id = product.id;
+      await applyTicketSlaTargets(tx, t);
       const created = await event(tx, t, u, "created", {
         key: "event_ticket_created",
         params: { company: receivingTeam.name },
@@ -275,7 +277,7 @@ export class TicketsService {
       await this.attach(tx, t, null, items);
       const recipients = (await tx.query("SELECT id,name,email FROM users WHERE org_id=$1 AND active=true AND system_role='member'", [ownerId])).rows;
       await this.mail.enqueue(tx, created.rows[0].id, 'assigned', t, recipients);
-      return t;
+      return enrichTicketSla(t);
     });
     return ticket;
   }
@@ -310,6 +312,9 @@ export class TicketsService {
           fail(403, "direct_customer_replies_are_not_allowed_use_an_internal");
         const note = await event(tx, t, u, "comment", text(b.body), visibility);
         await this.attach(tx, t, note.rows[0].id, items);
+        if (u.role !== "customer" && !t.first_responded_at) {
+          await tx.query("UPDATE tickets SET first_responded_at=now() WHERE id=$1 AND first_responded_at IS NULL", [t.id]);
+        }
       } else {
         if (
           ["customer", "super_admin"].includes(u.role) ||
@@ -325,14 +330,17 @@ export class TicketsService {
           const severity = choice(b.severity, ["s1", "s2", "s3"]);
           if (severity === t.severity)
             fail(400, "the_severity_level_is_already_the_same");
+          const prevSeverity = t.severity;
           await tx.query("UPDATE tickets SET severity=$1 WHERE id=$2", [
             severity,
             t.id,
           ]);
+          t.severity = severity;
+          await applyTicketSlaTargets(tx, t);
           await event(tx, t, u, "severity", {
             key: "event_severity_changed",
             params: {
-              from: t.severity.toUpperCase(),
+              from: prevSeverity.toUpperCase(),
               to: severity.toUpperCase(),
             },
           });
@@ -376,7 +384,7 @@ export class TicketsService {
             await this.attach(tx, t, note.rows[0].id, items);
           }
           await tx.query(
-            "UPDATE tickets SET owner_org_id=$1,assignee_id=$2,status=$3,escalated=escalated OR $4,dealer_involved=dealer_involved OR $6 WHERE id=$5",
+            "UPDATE tickets SET owner_org_id=$1,assignee_id=$2,status=$3,escalated=escalated OR $4,dealer_involved=dealer_involved OR $6,first_responded_at=COALESCE(first_responded_at,now()) WHERE id=$5",
             [
               orgId,
               assignee,
@@ -437,7 +445,7 @@ export class TicketsService {
             "public",
           );
           await this.attach(tx, t, note.rows[0].id, items);
-          await tx.query("UPDATE tickets SET status='closed' WHERE id=$1", [
+          await tx.query("UPDATE tickets SET status='closed',closed_at=COALESCE(closed_at,now()),first_responded_at=COALESCE(first_responded_at,now()) WHERE id=$1", [
             t.id,
           ]);
           const closingEvent = await event(
