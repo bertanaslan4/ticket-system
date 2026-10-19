@@ -677,7 +677,25 @@ export default {
   automations_conditions_not_matched: "Koşullar Eşleşmedi",
   rule_not_found: "Otomasyon kuralı bulunamadı.",
   rule_name_required: "Kural adı zorunludur.",
+  realtime_live_stream: "Canlı Akış (SSE)",
+  realtime_connected: "Canlı Akış Aktif",
+  realtime_connecting: "Bağlanıyor…",
+  realtime_upgrade_pro: "Canlı Akış (PRO)",
+  realtime_pro_modal_title: "Canlı Bildirimler & Anlık Senkronizasyon",
+  realtime_pro_modal_desc: "Sayfa yenilemeye gerek kalmadan yeni bilet ve yorumların anında ekrana düşmesi PRO ve Kurumsal paketlere özel bir ayrıcalıktır.",
+  realtime_pro_feature_1: "Sıfır bekleme: Yeni biletler sayfa yenilenmeden anında listenize eklenir.",
+  realtime_pro_feature_2: "Anlık yorum ve durum akışı ile destek ekibi arasında anlık senkronizasyon.",
+  realtime_pro_feature_3: "Anlık uyarı kartları ve akıllı bildirim sistemi.",
+  realtime_upgrade_button: "Planı PRO'ya Yükselt",
+  realtime_new_ticket: "Yeni Destek Bileti",
+  realtime_ticket_updated: "Bilet Güncellendi",
+  realtime_new_comment: "Yeni Yorum Eklendi",
+  realtime_toast_click_to_view: "Görüntülemek için tıklayın",
+  realtime_status_tooltip: "Sunucuyla kesintisiz gerçek zamanlı veri akışı etkin.",
+  recommended: "Önerilen",
 };
+
+
 
 
 

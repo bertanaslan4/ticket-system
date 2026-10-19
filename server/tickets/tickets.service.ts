@@ -8,6 +8,7 @@ import { translate } from "../../shared/i18n.js";
 import { customerContactRole, isCustomerContact, adjacentSupportCompanies, previousSupportCompany } from '../../shared/support-flow.js';
 import { AiService } from "../ai/ai.service.js";
 import { AutomationsService } from "../automations/automations.service.js";
+import { RealtimeService } from "../realtime/realtime.service.js";
 function access(u, t) {
   if ((t.tenant_id || 1) !== (u.tenant_id || 1)) return false;
   if (u.role === "super_admin") return true;
@@ -61,6 +62,7 @@ export class TicketsService {
     @Optional() private readonly integrations?: IntegrationsService,
     @Optional() private readonly aiService?: AiService,
     @Optional() private readonly automations?: AutomationsService,
+    @Optional() private readonly realtime?: RealtimeService,
   ) {}
   async withFiles(files: any[], work: (items: any[]) => Promise<any>) {
     const items = await this.storage.save(files);
@@ -348,6 +350,14 @@ export class TicketsService {
         await this.automations.evaluateAndExecute("ticket.created", { ticket, user: u });
       } catch {}
     }
+    this.realtime?.broadcastToTenant(ticket.tenant_id || 1, "ticket:created", {
+      ticket_id: ticket.id,
+      title: ticket.title,
+      severity: ticket.severity,
+      type: ticket.type,
+      creator_name: u.name,
+      creator_role: u.role,
+    });
     return ticket;
   }
   async action(
@@ -600,6 +610,14 @@ export class TicketsService {
         }
       } catch {}
     }
+    this.realtime?.broadcastToTenant(u.tenant_id || 1, "ticket:updated", {
+      ticket_id: Number(id),
+      action: b.action,
+      visibility: b.visibility || "public",
+      body: b.body,
+      actor_name: u.name,
+      actor_role: u.role,
+    });
     return { ok: true };
   }
   async submitCsat(ticketId: string, user: any, body: any): Promise<any> {
@@ -612,7 +630,7 @@ export class TicketsService {
     }
     const comment = typeof body?.comment === "string" ? body.comment.trim().slice(0, 1000) : "";
 
-    return await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       const t = await getTicket(tx, ticketId, u, true);
       if (t.customer_id !== u.org_id) fail(403, "only_customer_can_rate_ticket");
       if (t.status !== "closed") fail(400, "ticket_must_be_closed_to_rate");
@@ -643,6 +661,12 @@ export class TicketsService {
         customer_name: u.name,
       };
     });
+    this.realtime?.broadcastToTenant(u.tenant_id || 1, "ticket:csat", {
+      ticket_id: Number(ticketId),
+      rating,
+      customer_name: u.name,
+    });
+    return result;
   }
 }
 

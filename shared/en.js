@@ -678,7 +678,25 @@ storage_destination_locked:"Changing account or bucket requires migration to pre
   automations_conditions_not_matched: "Conditions Did Not Match",
   rule_not_found: "Automation rule not found.",
   rule_name_required: "Rule name is required.",
+  realtime_live_stream: "Live Stream (SSE)",
+  realtime_connected: "Live Stream Connected",
+  realtime_connecting: "Connecting…",
+  realtime_upgrade_pro: "Live Stream (PRO)",
+  realtime_pro_modal_title: "Real-Time Notifications & Instant Sync",
+  realtime_pro_modal_desc: "Real-time ticket and comment updates without refreshing the page is an exclusive feature for PRO and Enterprise plans.",
+  realtime_pro_feature_1: "Zero waiting: New tickets appear in your list without refreshing the page.",
+  realtime_pro_feature_2: "Instant comment and status stream keeping support teams fully aligned.",
+  realtime_pro_feature_3: "Instant alert toasts and smart notification cards.",
+  realtime_upgrade_button: "Upgrade Plan to PRO",
+  realtime_new_ticket: "New Support Ticket",
+  realtime_ticket_updated: "Ticket Updated",
+  realtime_new_comment: "New Comment Added",
+  realtime_toast_click_to_view: "Click to view",
+  realtime_status_tooltip: "Persistent real-time data stream with server is active.",
+  recommended: "Recommended",
 };
+
+
 
 
 

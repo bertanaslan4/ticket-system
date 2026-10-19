@@ -2813,4 +2813,423 @@ dialog.modal::backdrop,
   color: #f1f5f9;
 }
 
+/* ==========================================================================
+   Real-Time SSE Live Stream & Notifications (Premium Feature)
+   ========================================================================== */
+
+@keyframes realtimePulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.realtime-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.realtime-status-pill.connected {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #059669;
+}
+
+.realtime-status-pill.connecting {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: #d97706;
+}
+
+.realtime-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.realtime-pulse-dot.live {
+  background: #10b981;
+  animation: realtimePulse 2s infinite;
+}
+
+.realtime-status-pill.upgrade-cta {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(147, 51, 234, 0.12));
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #b45309;
+  cursor: pointer;
+}
+
+.realtime-status-pill.upgrade-cta:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(147, 51, 234, 0.22));
+  border-color: rgba(245, 158, 11, 0.5);
+  transform: translateY(-1px);
+}
+
+.realtime-sparkle-icon {
+  color: #f59e0b;
+}
+
+/* Upgrade Modal */
+.realtime-upgrade-modal {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.realtime-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 8px 4px;
+}
+
+.realtime-modal-hero {
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(245, 158, 11, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+.realtime-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.realtime-modal-lead {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-primary, #334155);
+}
+
+.realtime-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.realtime-feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.realtime-feature-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.realtime-feature-text strong {
+  display: block;
+  font-size: 14px;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 2px;
+}
+
+.realtime-feature-text p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.realtime-plan-comparison {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(148, 163, 184, 0.08);
+  border-radius: 8px;
+}
+
+.realtime-plan-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.realtime-plan-pill .pill-label {
+  color: #64748b;
+}
+
+.realtime-plan-pill .pill-value {
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+}
+
+.realtime-plan-pill.target .pill-value {
+  color: #7c3aed;
+}
+
+.realtime-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.realtime-upgrade-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.realtime-upgrade-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+/* Floating Real-Time Toasts */
+.realtime-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  max-width: 360px;
+  width: calc(100vw - 32px);
+}
+
+.realtime-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--card-border, #e2ebf1);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.realtime-toast:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.16);
+}
+
+.realtime-toast-created {
+  border-left: 4px solid #10b981;
+}
+
+.realtime-toast-updated {
+  border-left: 4px solid #3b82f6;
+}
+
+.realtime-toast-csat {
+  border-left: 4px solid #f59e0b;
+}
+
+.realtime-toast-icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  flex-shrink: 0;
+}
+
+.toast-icon-created {
+  color: #10b981;
+}
+
+.toast-icon-updated {
+  color: #3b82f6;
+}
+
+.toast-icon-csat {
+  color: #f59e0b;
+}
+
+.realtime-toast-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.realtime-toast-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-primary, #0f172a);
+}
+
+.toast-arrow {
+  color: #64748b;
+}
+
+.realtime-toast-msg {
+  margin: 3px 0 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.realtime-toast-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #4f46e5;
+  font-weight: 500;
+}
+
+.realtime-toast-close {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.realtime-toast-close:hover {
+  background: rgba(148, 163, 184, 0.15);
+  color: #334155;
+}
+
+/* Dark mode for Realtime elements */
+[data-theme="dark"] .realtime-status-pill.connected {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+[data-theme="dark"] .realtime-status-pill.connecting {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .realtime-status-pill.upgrade-cta {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(147, 51, 234, 0.2));
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fde047;
+}
+
+[data-theme="dark"] .realtime-modal-hero {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(245, 158, 11, 0.15));
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="dark"] .realtime-feature-item {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .realtime-feature-icon {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+[data-theme="dark"] .realtime-feature-text strong {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .realtime-feature-text p {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .realtime-plan-comparison {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+[data-theme="dark"] .realtime-toast {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .realtime-toast-icon-wrap {
+  background: #0f172a;
+}
+
+[data-theme="dark"] .realtime-toast-title {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .realtime-toast-msg {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .realtime-toast-hint {
+  color: #818cf8;
+}
+
+[data-theme="dark"] .realtime-toast-close:hover {
+  background: rgba(148, 163, 184, 0.25);
+  color: #e2e8f0;
+}
+
+
 

@@ -19,6 +19,7 @@ import { IntegrationsModule } from './integrations/integrations.module.js';
 import { WidgetModule } from './widget/widget.module.js';
 import { AiModule } from './ai/ai.module.js';
 import { AutomationsModule } from './automations/automations.module.js';
+import { RealtimeModule } from './realtime/realtime.module.js';
 @Module({})
 export class AppModule {
   static register(db: any): DynamicModule {
@@ -41,6 +42,7 @@ export class AppModule {
         WidgetModule,
         AiModule,
         AutomationsModule,
+        RealtimeModule,
         UsersModule,
         ReportsModule,
         AuditModule,

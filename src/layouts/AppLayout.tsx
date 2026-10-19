@@ -27,6 +27,9 @@ import { useAuth } from "../features/auth/AuthProvider";
 import VerifyEmailBanner from "../features/auth/VerifyEmailBanner";
 import { paths, viewForPath } from "../app/paths";
 import { useTickets } from "../features/tickets/tickets.api";
+import { RealtimeProvider } from "../features/realtime/RealtimeContext";
+import RealtimeIndicator from "../features/realtime/RealtimeIndicator";
+import RealtimeToasts from "../features/realtime/RealtimeToasts";
 export default function AppLayout() {
   useLanguage();
   const { user, logout } = useAuth();
@@ -39,7 +42,8 @@ export default function AppLayout() {
   useEffect(() => setError(null), [location.pathname]);
   if (!user) return null;
   return (
-    <div className="app">
+    <RealtimeProvider>
+      <div className="app">
       <aside>
         <button
           className="brand"
@@ -188,6 +192,7 @@ export default function AppLayout() {
             </strong>
           </span>
           <div className="header-controls">
+            <RealtimeIndicator />
             <ThemeToggle />
             <LanguagePicker />
           </div>
@@ -211,11 +216,13 @@ export default function AppLayout() {
           )}
           <Outlet />
         </main>
+        <RealtimeToasts />
         <footer>
           © {new Date().getFullYear()} Bekatos{" "}
           <span>{tr("support_is_a_team_effort")}</span>
         </footer>
       </div>
     </div>
+    </RealtimeProvider>
   );
 }
