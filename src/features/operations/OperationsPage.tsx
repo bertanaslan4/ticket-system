@@ -279,21 +279,30 @@ export default function OperationsPage() {
           </form>
         </section>
 
-        <section className="panel detail-section">
-          <h2>{tr("workspace_backup_export")}</h2>
-          <p className="hint">{tr("workspace_backup_intro")}</p>
-          <div style={{ marginTop: 16 }}>
+        <section className="panel detail-section" style={{ padding: "26px 28px", borderRadius: 14 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 10px 0" }}>{tr("workspace_backup_export")}</h2>
+          <p className="hint" style={{ fontSize: 13, lineHeight: 1.5, margin: "0 0 18px 0" }}>{tr("workspace_backup_intro")}</p>
+          <div>
             <button
               type="button"
               className="primary"
               disabled={exporting}
               onClick={handleExport}
+              style={{
+                width: "100%",
+                whiteSpace: "normal",
+                textAlign: "center",
+                lineHeight: 1.35,
+                padding: "12px 18px",
+                borderRadius: 8,
+              }}
             >
-              <Download size={17} />
-              {tr("download_workspace_backup")}
+              <Download size={17} style={{ flexShrink: 0 }} />
+              <span>{tr("download_workspace_backup")}</span>
             </button>
           </div>
         </section>
+
       </div>
 
       <section className="panel" style={{ marginTop: 20 }}>

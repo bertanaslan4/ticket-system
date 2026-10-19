@@ -100,7 +100,9 @@ export default function KnowledgeBasePage() {
       <div
         className="panel"
         style={{
-          marginBottom: 16,
+          padding: "16px 20px",
+          marginBottom: 20,
+          borderRadius: 12,
           display: "flex",
           gap: 12,
           flexWrap: "wrap",
@@ -170,12 +172,17 @@ export default function KnowledgeBasePage() {
               style={{
                 cursor: "pointer",
                 margin: 0,
+                padding: "20px 22px",
+                borderRadius: 12,
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
+                gap: 16,
+                transition: "all 0.2s ease",
               }}
               onClick={() => setReadingArticle(art)}
             >
+
               <div>
                 <div
                   style={{

@@ -306,7 +306,7 @@ export default function IntegrationsPage() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 940 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 1040, width: "100%" }}>
       {/* Heading */}
       <div>
         <div className="eyebrow">KURUMSAL ENTEGRASYONLAR</div>
@@ -336,7 +336,7 @@ export default function IntegrationsPage() {
       )}
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 8, borderBottom: "1px solid var(--card-border)", paddingBottom: 6 }}>
+      <div style={{ display: "flex", gap: 8, borderBottom: "1px solid var(--card-border)", paddingBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
         <button
           type="button"
           onClick={() => setActiveTab("smtp")}
@@ -435,13 +435,13 @@ export default function IntegrationsPage() {
 
       {/* Tab 1: SMTP Settings */}
       {activeTab === "smtp" && (
-        <div className="panel" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div className="panel" style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: 22, borderRadius: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(59, 76, 184, 0.12)", color: "#3b4cb8", display: "grid", placeItems: "center" }}>
               <Mail size={22} />
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: 18 }}>Giden E-posta (Outbound Custom SMTP)</h2>
+              <h2 style={{ margin: "0 0 4px 0", fontSize: 18, fontWeight: 700 }}>Giden E-posta (Outbound Custom SMTP)</h2>
               <small className="muted">Bildirim ve bilet güncellemelerini şirketinizin kendi kurumsal posta sunucusu üzerinden gönderin.</small>
             </div>
           </div>
@@ -558,13 +558,13 @@ export default function IntegrationsPage() {
 
       {/* Tab 2: Teams & Slack Webhooks */}
       {activeTab === "webhooks" && (
-        <div className="panel" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div className="panel" style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: 24, borderRadius: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(16, 185, 129, 0.12)", color: "#10b981", display: "grid", placeItems: "center" }}>
               <Radio size={22} />
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: 18 }}>Takım İletişim Kanalları (Teams & Slack)</h2>
+              <h2 style={{ margin: "0 0 4px 0", fontSize: 18, fontWeight: 700 }}>Takım İletişim Kanalları (Teams & Slack)</h2>
               <small className="muted">Yeni biletler veya acil durumlar oluştuğunda Microsoft Teams kanalınıza etkileşimli Adaptive Card fırlatın.</small>
             </div>
           </div>
@@ -642,13 +642,13 @@ export default function IntegrationsPage() {
       {activeTab === "widget" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {/* Customization Form */}
-          <div className="panel" style={{ padding: 28 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+          <div className="panel" style={{ padding: "28px 32px", borderRadius: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(59, 76, 184, 0.12)", color: "#3b4cb8", display: "grid", placeItems: "center" }}>
                 <MessageCircle size={22} />
               </div>
               <div>
-                <h2 style={{ margin: 0, fontSize: 18 }}>Web Sitesi Destek Balonu Özelleştirme</h2>
+                <h2 style={{ margin: "0 0 4px 0", fontSize: 18, fontWeight: 700 }}>Web Sitesi Destek Balonu Özelleştirme</h2>
                 <small className="muted">Web sitenize gömeceğiniz destek balonunun renk, başlık ve mesaj ayarlarını yapılandırın.</small>
               </div>
             </div>
@@ -725,7 +725,7 @@ export default function IntegrationsPage() {
           </div>
 
           {/* Embed Code Snippet Card */}
-          <div className="panel" style={{ padding: 28, background: "var(--workspace-bg)" }}>
+          <div className="panel" style={{ padding: "28px 32px", borderRadius: 14, background: "var(--workspace-bg)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <div>
                 <strong style={{ fontSize: 16 }}>Web Sitenize Eklenecek Kod</strong>
@@ -793,8 +793,8 @@ export default function IntegrationsPage() {
       {activeTab === "ai" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           {/* AI Settings Panel */}
-          <div className="panel" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="panel" style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: 20, borderRadius: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <div
                 style={{
                   width: 44,
@@ -809,12 +809,13 @@ export default function IntegrationsPage() {
                 <Sparkles size={22} />
               </div>
               <div>
-                <h2 style={{ margin: 0, fontSize: 18 }}>AI Copilot & Akıllı Triyaj Konfigürasyonu</h2>
+                <h2 style={{ margin: "0 0 4px 0", fontSize: 18, fontWeight: 700 }}>AI Copilot & Akıllı Triyaj Konfigürasyonu</h2>
                 <small className="muted">
                   Biletleri otomatik sınıflandırın, önem derecesi belirleyin ve temsilcileriniz için tek tıkla yanıt taslakları oluşturun.
                 </small>
               </div>
             </div>
+
 
             <form onSubmit={handleSaveAi} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 12, borderBottom: "1px solid var(--card-border)", paddingBottom: 16 }}>
@@ -863,8 +864,8 @@ export default function IntegrationsPage() {
           </div>
 
           {/* AI Triaging Live Playground */}
-          <div className="panel" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="panel" style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: 20, borderRadius: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <div
                 style={{
                   width: 44,

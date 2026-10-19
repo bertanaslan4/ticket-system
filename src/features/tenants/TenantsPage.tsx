@@ -170,7 +170,7 @@ export default function TenantsPage() {
       </div>
 
       {catalogQuery.data && (
-        <section className="panel" style={{ marginBottom: 20 }}>
+        <section className="panel" style={{ padding: "26px 28px", marginBottom: 24, borderRadius: 14 }}>
           <div className="panel-head">
             <div>
               <h2>{tr("self_service_billing")}</h2>
@@ -302,7 +302,8 @@ export default function TenantsPage() {
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 12,
+              gap: 16,
+              marginTop: 20,
             }}
           >
             {catalogQuery.data.plans
@@ -314,47 +315,60 @@ export default function TenantsPage() {
                   <div
                     key={plan.product_id}
                     className="panel"
-                    style={{ padding: 14, margin: 0 }}
+                    style={{
+                      padding: "20px 20px 18px",
+                      margin: 0,
+                      borderRadius: 12,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      border: isCurrent ? "2px solid #3b82f6" : "1px solid var(--card-border)",
+                      background: isCurrent ? "rgba(59, 130, 246, 0.04)" : "var(--card-bg, #ffffff)",
+                    }}
                   >
-                    <strong>{planLabel(plan.tier)}</strong>
-                    <div style={{ margin: "6px 0", fontSize: 18 }}>
-                      <strong>
-                        {plan.price_try} TL {tr("per_month")}
-                      </strong>
+                    <div>
+                      <strong>{planLabel(plan.tier)}</strong>
+                      <div style={{ margin: "8px 0", fontSize: 20 }}>
+                        <strong>
+                          {plan.price_try} TL <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-secondary)" }}>{tr("per_month")}</span>
+                        </strong>
+                      </div>
+                      <small
+                        className="muted"
+                        style={{ display: "block", marginBottom: 14 }}
+                      >
+                        {plan.agent_limit} Agent ·{" "}
+                        {(plan.storage_limit_mb / 1024).toFixed(0)} GB
+                      </small>
                     </div>
-                    <small
-                      className="muted"
-                      style={{ display: "block", marginBottom: 10 }}
-                    >
-                      {plan.agent_limit} Agent ·{" "}
-                      {(plan.storage_limit_mb / 1024).toFixed(0)} GB
-                    </small>
-                    <button
-                      type="button"
-                      className={isCurrent ? "secondary" : "primary"}
-                      style={{ width: "100%", marginBottom: 6 }}
-                      disabled={isCurrent || stripeCheckoutMutation.isPending}
-                      onClick={() =>
-                        stripeCheckoutMutation.mutate(plan.product_id)
-                      }
-                    >
-                      {stripeCheckoutMutation.isPending
-                        ? tr("redirecting_to_stripe")
-                        : isCurrent
-                          ? tr("current_plan")
-                          : tr("stripe_checkout")}
-                    </button>
-                    {!isCurrent && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
                       <button
                         type="button"
-                        className="secondary"
-                        style={{ width: "100%", fontSize: 12 }}
-                        disabled={purchaseMutation.isPending}
-                        onClick={() => purchaseMutation.mutate(plan.product_id)}
+                        className={isCurrent ? "secondary" : "primary"}
+                        style={{ width: "100%", padding: "10px 14px" }}
+                        disabled={isCurrent || stripeCheckoutMutation.isPending}
+                        onClick={() =>
+                          stripeCheckoutMutation.mutate(plan.product_id)
+                        }
                       >
-                        {tr("upgrade_now")}
+                        {stripeCheckoutMutation.isPending
+                          ? tr("redirecting_to_stripe")
+                          : isCurrent
+                            ? tr("current_plan")
+                            : tr("stripe_checkout")}
                       </button>
-                    )}
+                      {!isCurrent && (
+                        <button
+                          type="button"
+                          className="secondary"
+                          style={{ width: "100%", fontSize: 12, padding: "8px 12px" }}
+                          disabled={purchaseMutation.isPending}
+                          onClick={() => purchaseMutation.mutate(plan.product_id)}
+                        >
+                          {tr("upgrade_now")}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -362,36 +376,48 @@ export default function TenantsPage() {
               <div
                 key={addon.product_id}
                 className="panel"
-                style={{ padding: 14, margin: 0 }}
+                style={{
+                  padding: "20px 20px 18px",
+                  margin: 0,
+                  borderRadius: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  background: "var(--card-bg, #ffffff)",
+                }}
               >
-                <strong>{tr(addon.title_key)}</strong>
-                <div style={{ margin: "6px 0", fontSize: 18 }}>
-                  <strong>
-                    +{addon.price_try} TL {tr("per_month")}
-                  </strong>
+                <div>
+                  <strong>{tr(addon.title_key)}</strong>
+                  <div style={{ margin: "8px 0", fontSize: 20 }}>
+                    <strong>
+                      +{addon.price_try} TL <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-secondary)" }}>{tr("per_month")}</span>
+                    </strong>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  className="primary"
-                  style={{ width: "100%", marginBottom: 6 }}
-                  disabled={stripeCheckoutMutation.isPending}
-                  onClick={() =>
-                    stripeCheckoutMutation.mutate(addon.product_id)
-                  }
-                >
-                  {stripeCheckoutMutation.isPending
-                    ? tr("redirecting_to_stripe")
-                    : tr("stripe_checkout")}
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  style={{ width: "100%", fontSize: 12 }}
-                  disabled={purchaseMutation.isPending}
-                  onClick={() => purchaseMutation.mutate(addon.product_id)}
-                >
-                  {tr("buy_addon")}
-                </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+                  <button
+                    type="button"
+                    className="primary"
+                    style={{ width: "100%", padding: "10px 14px" }}
+                    disabled={stripeCheckoutMutation.isPending}
+                    onClick={() =>
+                      stripeCheckoutMutation.mutate(addon.product_id)
+                    }
+                  >
+                    {stripeCheckoutMutation.isPending
+                      ? tr("redirecting_to_stripe")
+                      : tr("stripe_checkout")}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary"
+                    style={{ width: "100%", fontSize: 12, padding: "8px 12px" }}
+                    disabled={purchaseMutation.isPending}
+                    onClick={() => purchaseMutation.mutate(addon.product_id)}
+                  >
+                    {tr("buy_addon")}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

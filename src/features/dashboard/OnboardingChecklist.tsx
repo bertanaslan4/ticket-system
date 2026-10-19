@@ -39,9 +39,12 @@ export default function OnboardingChecklist() {
     <div
       className="panel"
       style={{
-        marginBottom: 20,
-        backgroundColor: "var(--card-bg, #1e293b)",
+        padding: "24px 28px",
+        marginBottom: 24,
+        borderRadius: 14,
+        backgroundColor: "var(--card-bg, #ffffff)",
         borderColor: is_all_completed ? "#10b981" : "#3b82f6",
+        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)",
       }}
     >
       <div
@@ -49,17 +52,17 @@ export default function OnboardingChecklist() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
-          marginBottom: 12,
+          marginBottom: 14,
         }}
       >
         <div>
-          <h2 style={{ fontSize: 18, marginBottom: 4 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 6px 0", color: "var(--text-primary)" }}>
             {tr("onboarding_checklist")}{" "}
-            <span style={{ fontSize: 14, opacity: 0.8 }}>
+            <span style={{ fontSize: 14, opacity: 0.8, fontWeight: 500 }}>
               ({completed_count}/{total_steps})
             </span>
           </h2>
-          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+          <p className="muted" style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>
             {is_all_completed
               ? tr("all_steps_completed")
               : tr("onboarding_checklist_intro")}
@@ -69,7 +72,7 @@ export default function OnboardingChecklist() {
           type="button"
           className="secondary"
           title={tr("dismiss_checklist")}
-          style={{ padding: "4px 8px" }}
+          style={{ padding: "6px 10px", borderRadius: 8, display: "inline-flex", alignItems: "center" }}
           onClick={() => dismissMutation.mutate()}
         >
           <X size={15} />
@@ -79,11 +82,12 @@ export default function OnboardingChecklist() {
       <div
         style={{
           width: "100%",
-          backgroundColor: "#334155",
+          backgroundColor: "var(--card-border, #e2e8f0)",
           height: 6,
           borderRadius: 3,
           overflow: "hidden",
-          marginBottom: 14,
+          marginBottom: 18,
+          marginTop: 2,
         }}
       >
         <div
@@ -100,7 +104,7 @@ export default function OnboardingChecklist() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 10,
+          gap: 12,
         }}
       >
         {steps.map((step: any) => (
@@ -110,16 +114,16 @@ export default function OnboardingChecklist() {
             style={{
               display: "flex",
               alignItems: "flex-start",
-              gap: 8,
-              padding: 10,
-              borderRadius: 8,
+              gap: 10,
+              padding: "14px 16px",
+              borderRadius: 10,
               backgroundColor: step.completed
                 ? "rgba(16, 185, 129, 0.08)"
-                : "rgba(255, 255, 255, 0.04)",
+                : "var(--workspace-bg, rgba(0, 0, 0, 0.02))",
               textDecoration: "none",
               color: "inherit",
-              border: "1px solid",
-              borderColor: step.completed ? "rgba(16, 185, 129, 0.3)" : "#334155",
+              border: `1px solid ${step.completed ? "rgba(16, 185, 129, 0.35)" : "var(--card-border, #e2ebf1)"}`,
+              transition: "all 0.15s ease",
             }}
           >
             {step.completed ? (
@@ -134,11 +138,13 @@ export default function OnboardingChecklist() {
                   fontWeight: 600,
                   textDecoration: step.completed ? "line-through" : "none",
                   opacity: step.completed ? 0.8 : 1,
+                  color: "var(--text-primary)",
+                  marginBottom: 2,
                 }}
               >
                 {tr(step.title_key)}
               </div>
-              <small className="muted" style={{ fontSize: 11 }}>
+              <small className="muted" style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.4 }}>
                 {tr(step.hint_key)}
               </small>
             </div>

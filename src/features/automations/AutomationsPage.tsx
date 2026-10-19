@@ -317,17 +317,17 @@ export default function AutomationsPage() {
       </div>
 
       {/* Rules List */}
-      <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ padding: "18px 24px", borderBottom: "1px solid var(--card-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Tanımlı Otomasyon Kuralları</h2>
+      <div className="panel" style={{ padding: 0, overflow: "hidden", borderRadius: 14 }}>
+        <div style={{ padding: "20px 26px", borderBottom: "1px solid var(--card-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>Tanımlı Otomasyon Kuralları</h2>
           <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{rules.length} kural listeleniyor</span>
         </div>
 
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--text-secondary)" }}>Yükleniyor...</div>
         ) : rules.length === 0 ? (
-          <div style={{ padding: 48, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-            <Zap size={36} color="var(--text-secondary)" style={{ opacity: 0.5 }} />
+          <div style={{ padding: "56px 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+            <Zap size={38} color="var(--text-secondary)" style={{ opacity: 0.5 }} />
             <p style={{ margin: 0, color: "var(--text-secondary)", fontWeight: 500 }}>{tr("automations_no_rules")}</p>
             <button type="button" className="primary" onClick={openCreateModal} style={{ marginTop: 8 }}>
               {tr("automations_new_rule")}
@@ -343,7 +343,7 @@ export default function AutomationsPage() {
                 <div
                   key={rule.id}
                   style={{
-                    padding: "20px 24px",
+                    padding: "20px 26px",
                     borderBottom: "1px solid var(--card-border)",
                     display: "flex",
                     alignItems: "center",
@@ -354,6 +354,7 @@ export default function AutomationsPage() {
                     transition: "background 0.2s ease",
                   }}
                 >
+
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                       <span
