@@ -52,33 +52,36 @@ export default function LoginThreeBackground() {
 
       // Main 3D Group
       const mainGroup = new THREE.Group();
-      // Shift slightly down and right for visual balance with the text
-      mainGroup.position.set(2.2, -2.8, 0);
+      mainGroup.position.set(0, 0, 0);
       scene.add(mainGroup);
 
       // Lighting
-      const ambientLight = new THREE.AmbientLight(0x0f2744, 2.5);
+      const ambientLight = new THREE.AmbientLight(0x1e293b, 2.5);
       scene.add(ambientLight);
 
-      const cyanPointLight = new THREE.PointLight(0x00d2ff, 4.0, 50);
-      cyanPointLight.position.set(6, 6, 8);
+      const cyanPointLight = new THREE.PointLight(0x00d2ff, 4.5, 60);
+      cyanPointLight.position.set(8, 8, 10);
       scene.add(cyanPointLight);
 
-      const coralPointLight = new THREE.PointLight(0xff5722, 3.5, 50);
-      coralPointLight.position.set(-6, -6, 6);
-      scene.add(coralPointLight);
+      const brandBlueLight = new THREE.PointLight(0x222fb9, 5.0, 60);
+      brandBlueLight.position.set(-8, -6, 8);
+      scene.add(brandBlueLight);
 
-      const purpleLight = new THREE.PointLight(0x818cf8, 2.5, 50);
-      purpleLight.position.set(0, 8, -4);
+      const orangeLight = new THREE.PointLight(0xff6b35, 3.5, 50);
+      orangeLight.position.set(0, -9, 6);
+      scene.add(orangeLight);
+
+      const purpleLight = new THREE.PointLight(0x818cf8, 3.0, 50);
+      purpleLight.position.set(0, 9, -5);
       scene.add(purpleLight);
 
       // Central Icosahedron Cage (Outer Wireframe)
-      const outerGeo = new THREE.IcosahedronGeometry(2.6, 1);
+      const outerGeo = new THREE.IcosahedronGeometry(2.8, 1);
       const outerMat = new THREE.MeshStandardMaterial({
         color: 0x38bdf8,
         wireframe: true,
         transparent: true,
-        opacity: 0.38,
+        opacity: 0.4,
         roughness: 0.2,
         metalness: 0.8,
       });
@@ -86,66 +89,77 @@ export default function LoginThreeBackground() {
       mainGroup.add(outerMesh);
 
       // Inner Faceted Core
-      const innerGeo = new THREE.IcosahedronGeometry(1.7, 0);
+      const innerGeo = new THREE.IcosahedronGeometry(1.8, 0);
       const innerMat = new THREE.MeshPhysicalMaterial({
-        color: 0x0284c7,
-        emissive: 0x0369a1,
-        emissiveIntensity: 0.4,
+        color: 0x1e3a8a,
+        emissive: 0x1d4ed8,
+        emissiveIntensity: 0.5,
         roughness: 0.15,
         metalness: 0.85,
         clearcoat: 1.0,
         clearcoatRoughness: 0.1,
         transparent: true,
-        opacity: 0.82,
+        opacity: 0.85,
       });
       const innerMesh = new THREE.Mesh(innerGeo, innerMat);
       mainGroup.add(innerMesh);
 
       // Inner Pulsing Core Glow
-      const glowGeo = new THREE.SphereGeometry(0.85, 24, 24);
+      const glowGeo = new THREE.SphereGeometry(0.95, 24, 24);
       const glowMat = new THREE.MeshBasicMaterial({
         color: 0x67e8f9,
         wireframe: true,
         transparent: true,
-        opacity: 0.45,
+        opacity: 0.5,
       });
       const glowMesh = new THREE.Mesh(glowGeo, glowMat);
       mainGroup.add(glowMesh);
 
-      // Orbiting Torus Rings
-      const ring1Geo = new THREE.TorusGeometry(3.8, 0.035, 16, 100);
+      // Orbiting Torus Rings (expanded for wide-screen immersion)
+      const ring1Geo = new THREE.TorusGeometry(4.2, 0.035, 16, 120);
       const ring1Mat = new THREE.MeshBasicMaterial({
-        color: 0x00d2ff,
+        color: 0x222fb9,
         transparent: true,
-        opacity: 0.4,
+        opacity: 0.45,
       });
       const ring1 = new THREE.Mesh(ring1Geo, ring1Mat);
       ring1.rotation.x = Math.PI / 3;
       ring1.rotation.y = Math.PI / 6;
       mainGroup.add(ring1);
 
-      const ring2Geo = new THREE.TorusGeometry(4.7, 0.028, 16, 120);
+      const ring2Geo = new THREE.TorusGeometry(5.5, 0.03, 16, 140);
       const ring2Mat = new THREE.MeshBasicMaterial({
-        color: 0xf97316,
+        color: 0x00d2ff,
         transparent: true,
-        opacity: 0.35,
+        opacity: 0.4,
       });
       const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
       ring2.rotation.x = -Math.PI / 4;
       ring2.rotation.y = Math.PI / 4;
       mainGroup.add(ring2);
 
-      const ring3Geo = new THREE.TorusGeometry(5.4, 0.02, 16, 120);
+      const ring3Geo = new THREE.TorusGeometry(6.6, 0.024, 16, 140);
       const ring3Mat = new THREE.MeshBasicMaterial({
-        color: 0x818cf8,
+        color: 0xf97316,
         transparent: true,
-        opacity: 0.25,
+        opacity: 0.35,
       });
       const ring3 = new THREE.Mesh(ring3Geo, ring3Mat);
       ring3.rotation.x = Math.PI / 2.2;
       mainGroup.add(ring3);
 
-      // Orbiting Satellite Nodes (representing Customer, Dealer, Contractor)
+      const ring4Geo = new THREE.TorusGeometry(7.6, 0.02, 16, 160);
+      const ring4Mat = new THREE.MeshBasicMaterial({
+        color: 0x818cf8,
+        transparent: true,
+        opacity: 0.28,
+      });
+      const ring4 = new THREE.Mesh(ring4Geo, ring4Mat);
+      ring4.rotation.x = -Math.PI / 3.5;
+      ring4.rotation.z = Math.PI / 5;
+      mainGroup.add(ring4);
+
+      // Orbiting Satellite Nodes
       interface Satellite {
         mesh: THREE.Mesh;
         radius: number;
@@ -157,26 +171,25 @@ export default function LoginThreeBackground() {
 
       const satellites: Satellite[] = [];
       const nodeConfigs = [
-        { color: 0x00d2ff, radius: 3.8, speed: 0.9, size: 0.4, inclination: 0.5 },
-        { color: 0xf97316, radius: 4.7, speed: -0.65, size: 0.45, inclination: -0.7 },
-        { color: 0xa855f7, radius: 5.4, speed: 0.45, size: 0.38, inclination: 0.9 },
-        { color: 0x10b981, radius: 3.2, speed: -1.1, size: 0.32, inclination: -0.3 },
+        { color: 0x222fb9, radius: 4.4, speed: 0.85, size: 0.45, inclination: 0.4 },
+        { color: 0x00d2ff, radius: 5.6, speed: -0.6, size: 0.42, inclination: -0.6 },
+        { color: 0xf97316, radius: 6.8, speed: 0.42, size: 0.44, inclination: 0.8 },
+        { color: 0x10b981, radius: 4.8, speed: -0.9, size: 0.35, inclination: -0.3 },
+        { color: 0xa855f7, radius: 7.6, speed: 0.32, size: 0.4, inclination: 0.5 },
       ];
 
       nodeConfigs.forEach((cfg) => {
-        // Satellite Cube / Node
         const satGeo = new THREE.BoxGeometry(cfg.size, cfg.size, cfg.size);
         const satMat = new THREE.MeshStandardMaterial({
           color: cfg.color,
           emissive: cfg.color,
-          emissiveIntensity: 0.6,
+          emissiveIntensity: 0.65,
           roughness: 0.2,
           metalness: 0.8,
         });
         const satMesh = new THREE.Mesh(satGeo, satMat);
         mainGroup.add(satMesh);
 
-        // Dynamic Connecting Laser Beam to center
         const lineGeo = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(0, 0, 0),
           new THREE.Vector3(0, 0, 0),
@@ -200,16 +213,14 @@ export default function LoginThreeBackground() {
       });
 
       // Background Starfield / Particle Cloud
-      const particleCount = 220;
+      const particleCount = 300;
       const particleGeo = new THREE.BufferGeometry();
       const particlePositions = new Float32Array(particleCount * 3);
-      const particleScales = new Float32Array(particleCount);
 
       for (let i = 0; i < particleCount; i++) {
-        particlePositions[i * 3] = (Math.random() - 0.5) * 32;
-        particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 32;
-        particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 20 - 4;
-        particleScales[i] = Math.random() * 2 + 0.5;
+        particlePositions[i * 3] = (Math.random() - 0.5) * 44;
+        particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 40;
+        particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 24 - 4;
       }
 
       particleGeo.setAttribute(
@@ -219,27 +230,26 @@ export default function LoginThreeBackground() {
 
       const particleMat = new THREE.PointsMaterial({
         color: 0x7dd3fc,
-        size: 0.12,
+        size: 0.13,
         transparent: true,
-        opacity: 0.55,
+        opacity: 0.6,
       });
 
       const particles = new THREE.Points(particleGeo, particleMat);
       scene.add(particles);
 
-      // Mouse Parallax
+      // Mouse Parallax across entire window
       let mouseX = 0;
       let mouseY = 0;
       let targetX = 0;
       let targetY = 0;
 
       const handleMouseMove = (e: MouseEvent) => {
-        const rect = container.getBoundingClientRect();
-        mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        mouseY = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+        mouseX = (e.clientX / (window.innerWidth || 1)) * 2 - 1;
+        mouseY = -((e.clientY / (window.innerHeight || 1)) * 2 - 1);
       };
 
-      container.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mousemove", handleMouseMove, { passive: true });
 
       // Resize Observer
       const handleResize = () => {
@@ -322,7 +332,7 @@ export default function LoginThreeBackground() {
 
       return () => {
         cancelAnimationFrame(animationFrameId);
-        container.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mousemove", handleMouseMove);
         resizeObserver.disconnect();
 
         if (renderer && renderer.domElement && container.contains(renderer.domElement)) {
@@ -343,6 +353,8 @@ export default function LoginThreeBackground() {
         ring2Mat.dispose();
         ring3Geo.dispose();
         ring3Mat.dispose();
+        ring4Geo.dispose();
+        ring4Mat.dispose();
         particleGeo.dispose();
         particleMat.dispose();
 
