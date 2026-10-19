@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { tr } from "../../i18n/index.js";
 import LanguagePicker from "../../components/LanguagePicker";
 import ThemeToggle from "../../components/ThemeToggle";
+import LoginThreeBackground from "./LoginThreeBackground";
 
 export default function Login({
   onLogin,
@@ -31,6 +32,7 @@ export default function Login({
   return (
     <div className="login">
       <div className="login-story">
+        <LoginThreeBackground />
         <div className="brand">
           <span className="brand-image">
             <img
@@ -74,11 +76,6 @@ export default function Login({
           </div>
         </div>
         <div className="login-story-footer">
-          <img
-            src="/assets/images/svg/welcom-card.svg"
-            alt="Tixia Theme"
-            className="login-illustration"
-          />
           <small>{tr("transparent_processes_secure_communication")}</small>
         </div>
       </div>
