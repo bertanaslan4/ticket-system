@@ -55,21 +55,21 @@ export default function LoginThreeBackground() {
       mainGroup.position.set(0, 0, 0);
       scene.add(mainGroup);
 
-      // Lighting
-      const ambientLight = new THREE.AmbientLight(0x1e293b, 2.5);
+      // Lighting - Bekatos Brand Ambient & Point Lights
+      const ambientLight = new THREE.AmbientLight(0x0a0b4e, 2.8);
       scene.add(ambientLight);
 
-      const cyanPointLight = new THREE.PointLight(0x00d2ff, 4.5, 60);
+      const cyanPointLight = new THREE.PointLight(0x38bdf8, 4.5, 60);
       cyanPointLight.position.set(8, 8, 10);
       scene.add(cyanPointLight);
 
-      const brandBlueLight = new THREE.PointLight(0x222fb9, 5.0, 60);
-      brandBlueLight.position.set(-8, -6, 8);
-      scene.add(brandBlueLight);
+      const bekatosCoralLight = new THREE.PointLight(0xeb5545, 5.5, 60);
+      bekatosCoralLight.position.set(-8, -6, 8);
+      scene.add(bekatosCoralLight);
 
-      const orangeLight = new THREE.PointLight(0xff6b35, 3.5, 50);
-      orangeLight.position.set(0, -9, 6);
-      scene.add(orangeLight);
+      const bekatosBlueLight = new THREE.PointLight(0x1c2b8e, 6.0, 50);
+      bekatosBlueLight.position.set(0, -9, 6);
+      scene.add(bekatosBlueLight);
 
       const purpleLight = new THREE.PointLight(0x818cf8, 3.0, 50);
       purpleLight.position.set(0, 9, -5);
@@ -88,18 +88,18 @@ export default function LoginThreeBackground() {
       const outerMesh = new THREE.Mesh(outerGeo, outerMat);
       mainGroup.add(outerMesh);
 
-      // Inner Faceted Core
+      // Inner Faceted Core (Bekatos Deep Navy & Blue Emissive)
       const innerGeo = new THREE.IcosahedronGeometry(1.8, 0);
       const innerMat = new THREE.MeshPhysicalMaterial({
-        color: 0x1e3a8a,
-        emissive: 0x1d4ed8,
-        emissiveIntensity: 0.5,
+        color: 0x0a0b4e,
+        emissive: 0x1c2b8e,
+        emissiveIntensity: 0.6,
         roughness: 0.15,
         metalness: 0.85,
         clearcoat: 1.0,
         clearcoatRoughness: 0.1,
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.88,
       });
       const innerMesh = new THREE.Mesh(innerGeo, innerMat);
       mainGroup.add(innerMesh);
@@ -115,12 +115,12 @@ export default function LoginThreeBackground() {
       const glowMesh = new THREE.Mesh(glowGeo, glowMat);
       mainGroup.add(glowMesh);
 
-      // Orbiting Torus Rings (expanded for wide-screen immersion)
+      // Orbiting Torus Rings (Bekatos Royal Blue, Coral, and Sky)
       const ring1Geo = new THREE.TorusGeometry(4.2, 0.035, 16, 120);
       const ring1Mat = new THREE.MeshBasicMaterial({
-        color: 0x222fb9,
+        color: 0x1c2b8e,
         transparent: true,
-        opacity: 0.45,
+        opacity: 0.5,
       });
       const ring1 = new THREE.Mesh(ring1Geo, ring1Mat);
       ring1.rotation.x = Math.PI / 3;
@@ -129,9 +129,9 @@ export default function LoginThreeBackground() {
 
       const ring2Geo = new THREE.TorusGeometry(5.5, 0.03, 16, 140);
       const ring2Mat = new THREE.MeshBasicMaterial({
-        color: 0x00d2ff,
+        color: 0xeb5545,
         transparent: true,
-        opacity: 0.4,
+        opacity: 0.45,
       });
       const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
       ring2.rotation.x = -Math.PI / 4;
@@ -140,7 +140,7 @@ export default function LoginThreeBackground() {
 
       const ring3Geo = new THREE.TorusGeometry(6.6, 0.024, 16, 140);
       const ring3Mat = new THREE.MeshBasicMaterial({
-        color: 0xf97316,
+        color: 0x38bdf8,
         transparent: true,
         opacity: 0.35,
       });
@@ -159,7 +159,7 @@ export default function LoginThreeBackground() {
       ring4.rotation.z = Math.PI / 5;
       mainGroup.add(ring4);
 
-      // Orbiting Satellite Nodes
+      // Orbiting Satellite Nodes (featuring Bekatos Coral and Blue)
       interface Satellite {
         mesh: THREE.Mesh;
         radius: number;
@@ -171,9 +171,9 @@ export default function LoginThreeBackground() {
 
       const satellites: Satellite[] = [];
       const nodeConfigs = [
-        { color: 0x222fb9, radius: 4.4, speed: 0.85, size: 0.45, inclination: 0.4 },
-        { color: 0x00d2ff, radius: 5.6, speed: -0.6, size: 0.42, inclination: -0.6 },
-        { color: 0xf97316, radius: 6.8, speed: 0.42, size: 0.44, inclination: 0.8 },
+        { color: 0xeb5545, radius: 4.4, speed: 0.85, size: 0.46, inclination: 0.4 },
+        { color: 0x1c2b8e, radius: 5.6, speed: -0.6, size: 0.42, inclination: -0.6 },
+        { color: 0x38bdf8, radius: 6.8, speed: 0.42, size: 0.44, inclination: 0.8 },
         { color: 0x10b981, radius: 4.8, speed: -0.9, size: 0.35, inclination: -0.3 },
         { color: 0xa855f7, radius: 7.6, speed: 0.32, size: 0.4, inclination: 0.5 },
       ];

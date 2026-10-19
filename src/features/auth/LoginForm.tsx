@@ -73,16 +73,16 @@ export default function LoginForm({
       {/* Centered Tixia login card */}
       <div className="login-card login-form">
         <div className="login-card-brand">
-          <img
-            src="/tixia-logo.png"
-            alt="Tixia."
-            className="tixia-logo-light"
-          />
-          <img
-            src="/tixia-logo-white.png"
-            alt="Tixia."
-            className="tixia-logo-dark"
-          />
+          <div className="bekatos-brand-wrap">
+            <img
+              src="/bekatos-logo.png"
+              alt="Bekatos"
+              className="bekatos-logo"
+            />
+          </div>
+          <div className="bekatos-brand-caption">
+            <span className="bekatos-badge">{tr("support_center")}</span>
+          </div>
         </div>
 
         <h1 className="login-card-title">
