@@ -10,7 +10,7 @@ import {
   UseGuards,
   Injectable,
 } from "@nestjs/common";
-import { AdminGuard } from "../auth/admin.guard.js";
+import { PlatformAdminGuard } from "../auth/platform-admin.guard.js";
 import { DatabaseService } from "../database/database.service.js";
 import { str, integer, option, email, audit } from "../common/admin-domain.js";
 import { fail } from "../common/domain.js";
@@ -198,7 +198,8 @@ export class TenantsService {
         ).rows[0];
       }
 
-      await tx.query("UPDATE users SET tenant_id=$1,org_id=$2 WHERE id=$3", [
+      // platform_admin keeps tenant management available after leaving the platform tenant.
+      await tx.query("UPDATE users SET tenant_id=$1,org_id=$2,platform_admin=true WHERE id=$3", [
         targetTenantId,
         org.id,
         user.id,
@@ -210,7 +211,7 @@ export class TenantsService {
 }
 
 @Controller("admin/tenants")
-@UseGuards(AdminGuard)
+@UseGuards(PlatformAdminGuard)
 export class TenantsController {
   constructor(private readonly service: TenantsService) {}
 

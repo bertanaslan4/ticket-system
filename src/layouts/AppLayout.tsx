@@ -86,7 +86,10 @@ export default function AppLayout() {
               ["storage", tr("cloud_settings"), Cloud],
               ["integrations", "Entegrasyonlar", Radio],
               ["automations", tr("automations"), Zap],
-            ].map(([key, label, Icon]: any) => (
+            ]
+              // Tenant and storage management span all workspaces.
+              .filter(([key]) => user.is_platform_admin || !["tenants", "storage"].includes(key as string))
+              .map(([key, label, Icon]: any) => (
               <button
                 key={key}
                 className={view === key ? "active" : ""}

@@ -24,6 +24,7 @@ export interface User {
   monthly_ticket_limit?: number;
   storage_limit_mb?: number;
   role: Role;
+  is_platform_admin?: boolean;
   program: string;
   daily_limit: number;
   used: number;
