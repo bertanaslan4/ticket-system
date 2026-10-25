@@ -412,6 +412,8 @@ storage_destination_locked:"Changing account or bucket requires migration to pre
     "The action could not be completed. Please try again.",
   enter_a_valid_positive_integer: "Enter a valid positive integer.",
   enter_a_valid_email_address: "Enter a valid email address.",
+  this_area_is_restricted_to_platform_admins:
+    "This area is restricted to platform admins.",
   this_area_is_restricted_to_super_admins:
     "This area is restricted to super admins.",
   company_not_found: "Company not found.",

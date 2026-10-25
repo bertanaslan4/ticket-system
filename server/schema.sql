@@ -405,3 +405,82 @@ CREATE TABLE IF NOT EXISTS automation_logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS automation_logs_tenant_idx ON automation_logs(tenant_id, id DESC);
+
+-- Phase 11: Tenant isolation hardening.
+-- Platform administration (all tenants, global storage) is separate from a workspace owner's super_admin role.
+-- Super admins of the platform tenant (id 1) are platform admins; platform_admin keeps that right after a tenant switch.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS platform_admin BOOLEAN NOT NULL DEFAULT false;
+
+-- Child tables carry tenant_id copied from their parent row, so every tenant-owned row can be filtered directly.
+ALTER TABLE events ADD COLUMN IF NOT EXISTS tenant_id INTEGER REFERENCES tenants(id);
+UPDATE events e SET tenant_id=t.tenant_id FROM tickets t WHERE t.id=e.ticket_id AND e.tenant_id IS NULL;
+ALTER TABLE events ALTER COLUMN tenant_id SET NOT NULL;
+CREATE INDEX IF NOT EXISTS events_tenant_idx ON events(tenant_id, id);
+
+ALTER TABLE attachments ADD COLUMN IF NOT EXISTS tenant_id INTEGER REFERENCES tenants(id);
+UPDATE attachments a SET tenant_id=t.tenant_id FROM tickets t WHERE t.id=a.ticket_id AND a.tenant_id IS NULL;
+ALTER TABLE attachments ALTER COLUMN tenant_id SET NOT NULL;
+CREATE INDEX IF NOT EXISTS attachments_tenant_idx ON attachments(tenant_id);
+
+ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS tenant_id INTEGER REFERENCES tenants(id);
+UPDATE mail_outbox m SET tenant_id=e.tenant_id FROM events e WHERE e.id=m.event_id AND m.tenant_id IS NULL;
+ALTER TABLE mail_outbox ALTER COLUMN tenant_id SET NOT NULL;
+CREATE INDEX IF NOT EXISTS mail_outbox_tenant_idx ON mail_outbox(tenant_id, id DESC);
+
+ALTER TABLE task_worklogs ADD COLUMN IF NOT EXISTS tenant_id INTEGER REFERENCES tenants(id);
+UPDATE task_worklogs w SET tenant_id=t.tenant_id FROM tasks t WHERE t.id=w.task_id AND w.tenant_id IS NULL;
+ALTER TABLE task_worklogs ALTER COLUMN tenant_id SET NOT NULL;
+CREATE INDEX IF NOT EXISTS task_worklogs_tenant_idx ON task_worklogs(tenant_id);
+
+-- The parent decides the tenant; callers cannot set a different one. Under RLS the parent lookup only sees
+-- the current tenant's rows, so attaching to another tenant's ticket leaves tenant_id NULL and the insert fails.
+CREATE OR REPLACE FUNCTION tenant_from_ticket() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN NEW.tenant_id := (SELECT tenant_id FROM tickets WHERE id=NEW.ticket_id); RETURN NEW; END $$;
+CREATE OR REPLACE FUNCTION tenant_from_event() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN NEW.tenant_id := (SELECT tenant_id FROM events WHERE id=NEW.event_id); RETURN NEW; END $$;
+CREATE OR REPLACE FUNCTION tenant_from_task() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN NEW.tenant_id := (SELECT tenant_id FROM tasks WHERE id=NEW.task_id); RETURN NEW; END $$;
+DROP TRIGGER IF EXISTS events_tenant ON events;
+CREATE TRIGGER events_tenant BEFORE INSERT OR UPDATE OF ticket_id, tenant_id ON events FOR EACH ROW EXECUTE FUNCTION tenant_from_ticket();
+DROP TRIGGER IF EXISTS attachments_tenant ON attachments;
+CREATE TRIGGER attachments_tenant BEFORE INSERT OR UPDATE OF ticket_id, tenant_id ON attachments FOR EACH ROW EXECUTE FUNCTION tenant_from_ticket();
+DROP TRIGGER IF EXISTS mail_outbox_tenant ON mail_outbox;
+CREATE TRIGGER mail_outbox_tenant BEFORE INSERT OR UPDATE OF event_id, tenant_id ON mail_outbox FOR EACH ROW EXECUTE FUNCTION tenant_from_event();
+DROP TRIGGER IF EXISTS task_worklogs_tenant ON task_worklogs;
+CREATE TRIGGER task_worklogs_tenant BEFORE INSERT OR UPDATE OF task_id, tenant_id ON task_worklogs FOR EACH ROW EXECUTE FUNCTION tenant_from_task();
+
+-- Row Level Security. Requests made for a signed-in user set app.tenant_id inside their transaction
+-- (see DatabaseService); rows of other tenants are then invisible and cannot be written.
+-- Without app.tenant_id (login, public widget, webhooks, background workers, platform admin) rows are not filtered.
+CREATE OR REPLACE FUNCTION app_current_tenant() RETURNS integer LANGUAGE sql STABLE AS $$
+ SELECT nullif(current_setting('app.tenant_id', true), '')::integer $$;
+
+DO $$
+DECLARE tbl text;
+BEGIN
+ FOREACH tbl IN ARRAY ARRAY['organizations','users','tickets','events','attachments','mail_outbox','products',
+   'admin_audit','sla_policies','push_tokens','push_outbox','iap_transactions','knowledge_base','tasks',
+   'task_worklogs','csat_surveys','automation_rules','automation_logs'] LOOP
+  EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
+  -- FORCE applies the policies to the table owner too (the app user normally owns the schema).
+  EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', tbl);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname=current_schema() AND tablename=tbl AND policyname='tenant_isolation') THEN
+   EXECUTE format('CREATE POLICY tenant_isolation ON %I USING (app_current_tenant() IS NULL OR tenant_id = app_current_tenant()) WITH CHECK (app_current_tenant() IS NULL OR tenant_id = app_current_tenant())', tbl);
+  END IF;
+ END LOOP;
+END $$;
+
+-- Superusers always bypass RLS. When the app connects as one (PGlite, local or test databases), tenant
+-- requests switch to this unprivileged role so the policies still apply. Production should connect as a
+-- normal owner role, which FORCE covers without a role switch.
+DO $$
+BEGIN
+ IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname=current_user AND rolsuper) THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='bekatos_tenant_rls') THEN
+   CREATE ROLE bekatos_tenant_rls NOLOGIN NOSUPERUSER NOBYPASSRLS;
+  END IF;
+  EXECUTE format('GRANT USAGE ON SCHEMA %I TO bekatos_tenant_rls', current_schema());
+  EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA %I TO bekatos_tenant_rls', current_schema());
+  EXECUTE format('GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA %I TO bekatos_tenant_rls', current_schema());
+ END IF;
+END $$;

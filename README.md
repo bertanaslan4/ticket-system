@@ -85,6 +85,21 @@ Yeni bir ortamda ilk yöneticiyi oluşturmak için `NEW_ADMIN_PASSWORD` ortam de
 
 Şema ek alanları mevcut verileri silmeden ekler. Kurulum öncesi PostgreSQL yedeği: `backups/pre-admin-1791442269822.dump`. Testler: `pnpm test`. PostgreSQL doğrulaması izole `ticket_test_<rakamlar>` veritabanlarında yapılır; her test dosyası ayrı veritabanıyla çalıştırılmalıdır.
 
+## Çalışma alanı (tenant) izolasyonu
+
+Her çalışma alanının verisi iki katmanda ayrılır:
+
+1. **Uygulama filtreleri:** servisler sorgularında `tenant_id` koşulunu kullanmaya devam eder.
+2. **PostgreSQL Row Level Security:** oturum açmış kullanıcının isteği `TenantContextInterceptor` ile kendi tenant'ına bağlanır. `DatabaseService` bu istekteki her sorguyu, `app.tenant_id` ayarlı bir transaction içinde çalıştırır. Böylece bir sorguda `tenant_id` koşulu unutulsa bile başka çalışma alanının satırları görünmez, değiştirilemez ve oraya kayıt eklenemez. Ayar transaction'a özeldir, havuzdaki bağlantıda kalmaz.
+
+`events`, `attachments`, `mail_outbox` ve `task_worklogs` tablolarındaki `tenant_id` alanı tetikleyiciyle bağlı olduğu kayıttan (bilet, olay, görev) kopyalanır; istemcinin gönderdiği değer dikkate alınmaz.
+
+Tenant bağlamı olmayan işlemler filtrelenmez: giriş, oturum doğrulama, widget, webhook'lar, arka plan mail gönderimi ve platform yönetimi. Bu yollar kendi `tenant_id` koşullarıyla çalışır.
+
+**Platform yöneticisi ve çalışma alanı sahibi ayrıdır.** Self-servis kayıtla açılan çalışma alanının sahibi kendi alanında `super_admin` olur, ancak tüm tenant'ları yöneten `/admin/tenants` ve ortak depolama ayarı `/admin/storage` ekranlarına erişemez. Bu ekranlar yalnızca platform tenant'ının (id 1) süper adminlerine açıktır. `users.platform_admin` alanı, başka bir tenant'a geçiş yapan platform yöneticisinin bu yetkiyi korumasını sağlar.
+
+**Üretim veritabanı kullanıcısı:** süper kullanıcılar ve `BYPASSRLS` yetkili roller RLS'i atlar. Uygulama böyle bir kullanıcıyla bağlanırsa (PGlite, yerel veya test veritabanı) tenant istekleri otomatik oluşturulan yetkisiz `bekatos_tenant_rls` rolüne geçer. Üretimde uygulamayı şemanın sahibi olan normal bir rolle (ör. `ticket_app`) bağlayın; `FORCE ROW LEVEL SECURITY` politikaları bu sahibe de uygular. Süper kullanıcı rolü varsa ve `bekatos_tenant_rls` yoksa sunucu açılışta uyarı yazar.
+
 ## Bilet iş akışı
 
 - Müşteri adı, program ve bayi ilişkisi sunucudan alınır; istemci bu alanları değiştiremez.

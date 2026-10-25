@@ -8,7 +8,13 @@ import QueryState from "../components/QueryState";
 import { tr, useLanguage } from "../i18n/index.js";
 import type { RouteObject } from "react-router-dom";
 import type { Role } from "../lib/types";
-function ProtectedRoute({ roles }: { roles?: Role[] }) {
+function ProtectedRoute({
+  roles,
+  platformOnly,
+}: {
+  roles?: Role[];
+  platformOnly?: boolean;
+}) {
   useLanguage();
   const { user, loading, error, refresh } = useAuth();
   const location = useLocation();
@@ -32,6 +38,13 @@ function ProtectedRoute({ roles }: { roles?: Role[] }) {
             ? "only_customers_can_create_tickets"
             : "this_area_is_restricted_to_super_admins",
         )}{" "}
+        <Link to="/dashboard">{tr("overview")}</Link>
+      </div>
+    );
+  if (platformOnly && !user.is_platform_admin)
+    return (
+      <div className="error" role="alert">
+        {tr("this_area_is_restricted_to_platform_admins")}{" "}
         <Link to="/dashboard">{tr("overview")}</Link>
       </div>
     );
@@ -108,11 +121,25 @@ export const routes: RouteObject[] = [
                 }),
               },
               {
-                path: "admin/tenants",
-                lazy: async () => ({
-                  Component: (await import("../features/tenants/TenantsPage"))
-                    .default,
-                }),
+                element: <ProtectedRoute platformOnly />,
+                children: [
+                  {
+                    path: "admin/tenants",
+                    lazy: async () => ({
+                      Component: (
+                        await import("../features/tenants/TenantsPage")
+                      ).default,
+                    }),
+                  },
+                  {
+                    path: "admin/storage",
+                    lazy: async () => ({
+                      Component: (
+                        await import("../features/settings/StoragePage")
+                      ).default,
+                    }),
+                  },
+                ],
               },
               {
                 path: "admin/operations",
@@ -124,13 +151,6 @@ export const routes: RouteObject[] = [
               },
               {path:'admin/products',lazy:async()=>({Component:(await import('../features/products/ProductsPage')).default})},
               {path:'admin/product-reports',lazy:async()=>({Component:(await import('../features/reports/ReportsPage')).ProductReportsPage})},
-              {
-                path: "admin/storage",
-                lazy: async () => ({
-                  Component: (await import("../features/settings/StoragePage"))
-                    .default,
-                }),
-              },
               {
                 path: "admin/users",
                 lazy: async () => ({

@@ -410,6 +410,8 @@ export default {
     "İşlem tamamlanamadı. Lütfen tekrar deneyin.",
   enter_a_valid_positive_integer: "Geçerli bir pozitif tam sayı girin.",
   enter_a_valid_email_address: "Geçerli bir e-posta adresi girin.",
+  this_area_is_restricted_to_platform_admins:
+    "Bu alan yalnızca platform yöneticileri içindir.",
   this_area_is_restricted_to_super_admins:
     "Bu alan yalnızca süper admin içindir.",
   company_not_found: "Şirket bulunamadı.",

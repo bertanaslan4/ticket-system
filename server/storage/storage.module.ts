@@ -8,10 +8,11 @@ import {
   Req,
   UseGuards,
 } from "@nestjs/common";
-import { AdminGuard } from "../auth/admin.guard.js";
+import { PlatformAdminGuard } from "../auth/platform-admin.guard.js";
 import { StorageSettings } from "./storage.service.js";
+// Storage settings are shared by every tenant, so only platform admins may change them.
 @Controller("admin/storage")
-@UseGuards(AdminGuard)
+@UseGuards(PlatformAdminGuard)
 class StorageController {
   constructor(private readonly settings: StorageSettings) {}
   @Get() status() {
