@@ -9,7 +9,7 @@ export async function seed(db) {
       [1, 3, "Yargıcı Kullanıcısı", "musteri@yargici.demo", "member"],
       [2, 2, "Ayşe Demir", "bayi@verimsoft.demo", "member"],
       [3, 2, "Mehmet Kaya", "mehmet@verimsoft.demo", "member"],
-      [4, 1, "Bertan Aslan", "super@bekatos.com", "super_admin"],
+      [4, 1, "Bertan Aslan", "bertan@bekatos.demo", "member"],
       [5, 1, "Selin Yılmaz", "selin@bekatos.demo", "member"],
       [6, 5, "Diğer Müşteri", "diger@musteri.demo", "member"],
       [7, 4, "Diğer Bayi", "diger@bayi.demo", "member"],

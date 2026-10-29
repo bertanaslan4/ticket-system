@@ -24,11 +24,13 @@ if (existsSync(".env")) {
   }
 }
 const db = await openDb();
-if (
+// Demo accounts share a public password, so they are never created in production.
+if (process.env.NODE_ENV === "production") {
+  if (process.env.SEED_DEMO === "true")
+    console.warn("SEED_DEMO=true is ignored in production; demo accounts are not created.");
+} else if (
   process.env.SEED_DEMO === "true" ||
-  (!process.env.DATABASE_URL &&
-    process.env.NODE_ENV !== "production" &&
-    process.env.SEED_DEMO !== "false")
+  (!process.env.DATABASE_URL && process.env.SEED_DEMO !== "false")
 )
   await seed(db);
 try {

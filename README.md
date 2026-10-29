@@ -59,7 +59,7 @@ Bu geçiş bir ORM geçişi değildir: mevcut parametreli SQL sorguları, Postgr
 
 ## Demo hesapları
 
-Tüm demo hesaplarının şifresi: `Demo2026!`. Giriş ekranındaki rol butonları bilgileri doldurur.
+Demo hesapları yalnızca yerel geliştirme ve testler içindir; şifreleri herkese açık olduğu için `NODE_ENV=production` iken `SEED_DEMO` değerinden bağımsız olarak hiçbir zaman oluşturulmaz. Tüm demo hesaplarının şifresi: `Demo2026!`.
 
 | Rol                     | E-posta               | Kurum              |
 | ----------------------- | --------------------- | ------------------ |
